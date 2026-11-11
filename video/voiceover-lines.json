@@ -1,0 +1,10 @@
+[
+  { "id": "hook", "say": "You speak at a hundred and fifty words a minute. You type at forty." },
+  { "id": "problem", "say": "Whisper Flow gets that. But its free plan runs out, and its code is closed." },
+  { "id": "reveal", "say": "So I built Louder." },
+  { "id": "demo", "say": "Hold a key. Speak. Release. Your words land in any app, in under a second." },
+  { "id": "offline", "say": "It runs fully offline. Your voice never leaves your computer." },
+  { "id": "free", "say": "No account. No limits. No subscription." },
+  { "id": "open", "say": "And it's open source. Want a feature? Add it." },
+  { "id": "outro", "say": "Louder. Free, on GitHub." }
+]

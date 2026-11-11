@@ -1,5 +1,6 @@
-// Generates the voiceover with the macOS `say` command and records how long
-// each line is, so the video can time every scene to its narration.
+// Fallback voiceover using the macOS `say` command (robotic; prefer
+// scripts/voiceover.py, which uses a natural-sounding local voice model).
+// Also records how long each line is, so every scene matches its narration.
 //
 //   node scripts/voiceover.mjs            # generate with the default voice
 //   VOICE=Samantha node scripts/voiceover.mjs
@@ -8,23 +9,14 @@
 // To use your own voice: record one file per line, save them over
 // public/vo/<id>.wav, then run with --measure and render again.
 import { execFileSync } from "node:child_process";
-import { mkdirSync, writeFileSync, rmSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 
 const VOICE = process.env.VOICE ?? "Daniel";
 const RATE = process.env.RATE ?? "190"; // words per minute
 const measureOnly = process.argv.includes("--measure");
 
 // `say` is what gets spoken (spelled so the voice pronounces the names right).
-const LINES = [
-  { id: "hook", say: "You speak at a hundred and fifty words a minute. You type at forty." },
-  { id: "problem", say: "Whisper Flow gets that. But its free plan runs out, and its code is closed." },
-  { id: "reveal", say: "So I built Louder." },
-  { id: "demo", say: "Hold a key. Speak. Release. Your words land in any app, in under a second." },
-  { id: "offline", say: "It runs fully offline. Your voice never leaves your computer." },
-  { id: "free", say: "No account. No limits. No subscription." },
-  { id: "open", say: "And it's open source. Want a feature? Add it." },
-  { id: "outro", say: "Louder. Free, on GitHub." },
-];
+const LINES = JSON.parse(readFileSync("voiceover-lines.json", "utf8"));
 
 mkdirSync("public/vo", { recursive: true });
 const durations = {};
