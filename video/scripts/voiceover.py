@@ -43,7 +43,7 @@ if "--samples" in sys.argv:
         print("wrote", voice)
 else:
     args = [a for a in sys.argv[1:] if not a.startswith("--")]
-    voice = args[0] if args else "am_michael"
+    voice = args[0] if args else "am_puck"
     speed = float(args[1]) if len(args) > 1 else 1.05
     for line in LINES:
         speak(line["say"], voice, speed, ROOT / f'public/vo/{line["id"]}.wav')

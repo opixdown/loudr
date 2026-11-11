@@ -22,24 +22,42 @@ const LEAD_IN = 4;
 const frames = (s: (typeof SCENES)[number]) =>
   LEAD_IN + Math.ceil((voiceover[s.id] + s.pad) * FPS);
 
+const TOTAL = SCENES.reduce((sum, s) => sum + frames(s), 0);
+/** When the last voiceover line ends; the music comes up after it. */
+const VOICE_END = TOTAL - Math.ceil(SCENES[SCENES.length - 1].pad * FPS);
+
+// Background music (public/music.wav, made by scripts/music.py): quiet under
+// the voice, louder for the closing shot, faded at both ends.
+const MUSIC_UNDER = 0.16;
+const MUSIC_OUTRO = 0.42;
+const musicVolume = (f: number) => {
+  const fadeIn = Math.min(1, f / (FPS * 0.5));
+  const fadeOut = Math.min(1, (TOTAL - f) / (FPS * 1.2));
+  const lift = Math.min(1, Math.max(0, (f - VOICE_END) / (FPS * 0.4)));
+  return (MUSIC_UNDER + (MUSIC_OUTRO - MUSIC_UNDER) * lift) * fadeIn * Math.max(0, fadeOut);
+};
+
 const Promo: React.FC = () => (
-  <Series>
-    {SCENES.map((s) => (
-      <Series.Sequence key={s.id} durationInFrames={frames(s)}>
-        <s.scene duration={frames(s)} />
-        <Sequence from={LEAD_IN}>
-          <Audio src={staticFile(`vo/${s.id}.wav`)} />
-        </Sequence>
-      </Series.Sequence>
-    ))}
-  </Series>
+  <>
+    <Audio src={staticFile("music.wav")} volume={musicVolume} />
+    <Series>
+      {SCENES.map((s) => (
+        <Series.Sequence key={s.id} durationInFrames={frames(s)}>
+          <s.scene duration={frames(s)} />
+          <Sequence from={LEAD_IN}>
+            <Audio src={staticFile(`vo/${s.id}.wav`)} />
+          </Sequence>
+        </Series.Sequence>
+      ))}
+    </Series>
+  </>
 );
 
 export const Root: React.FC = () => (
   <Composition
     id="Promo"
     component={Promo}
-    durationInFrames={SCENES.reduce((sum, s) => sum + frames(s), 0)}
+    durationInFrames={TOTAL}
     fps={FPS}
     width={1920}
     height={1080}
