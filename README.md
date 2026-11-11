@@ -1,21 +1,45 @@
-# Loudr
+<p align="center">
+  <img src="assets/icon.png" width="120" alt="Loudr icon">
+</p>
 
-Free, open-source, fully offline voice typing for macOS and Windows.
-An alternative to Wispr Flow that never sends your voice anywhere.
+<h1 align="center">Loudr</h1>
 
-Hold a key, speak, release. Your words are typed into whatever app is focused.
+<p align="center">
+  <b>Hold a key. Speak. Release. Your words are typed into any app.</b><br>
+  Free, open-source, fully offline voice typing for macOS and Windows.<br>
+  An alternative to Wispr Flow that never sends your voice anywhere.
+</p>
 
-![Demo](docs/demo.gif)
+<p align="center">
+  <a href="https://github.com/opixdown/loudr/releases/latest"><b>Download</b></a> ·
+  <a href="#build-from-source">Build from source</a> ·
+  <a href="#contributing">Contribute</a>
+</p>
 
-<!-- TODO: record a short demo GIF and save it as docs/demo.gif -->
+<p align="center">
+  <img src="https://img.shields.io/github/license/opixdown/loudr" alt="MIT license">
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey" alt="macOS and Windows">
+  <img src="https://img.shields.io/github/stars/opixdown/loudr?style=flat" alt="GitHub stars">
+</p>
+
+<p align="center">
+  <img src="docs/demo.gif" width="720" alt="Loudr promo: hold a key, speak, and the text appears">
+</p>
+
+## Why Loudr
 
 - **Offline.** Speech is transcribed on your computer with
   [whisper.cpp](https://github.com/ggerganov/whisper.cpp). The only network
   request Loudr ever makes is the one-time model download.
-- **No account, no telemetry, no cloud.**
-- **Fast.** The model stays loaded in memory (Metal on Apple Silicon), so a
-  5 second clip is typed out in well under a second on an M1.
-- **Small.** The installer is a few megabytes, not counting the model.
+- **Free, with no limits.** No account, no subscription, no word cap, no
+  telemetry.
+- **Fast.** The model stays loaded in memory (Metal on Apple Silicon). On an
+  M1-class Mac a 5 second clip is typed out in about 0.4 seconds.
+- **Small.** The installer is under 5 MB, not counting the speech model.
+- **Works everywhere you type.** Loudr pastes into whatever app has focus:
+  editors, browsers, chat apps, terminals.
+- **Yours to change.** MIT licensed. Add the feature you want and send a pull
+  request.
 
 ## Install
 
@@ -143,6 +167,19 @@ hotkey up   -> close microphone -> resample to 16 kHz mono
 
 No cloud APIs, no AI rewriting, no accounts, no auto-update, no Linux, no
 Intel Mac build, no CUDA.
+
+## Contributing
+
+Loudr is meant to be built on. Issues and pull requests are welcome. Ideas
+that would make good first contributions:
+
+- Linux support
+- An Intel Mac build
+- A custom vocabulary for names and technical terms
+- Restoring images and files on the clipboard after pasting
+- GPU acceleration on Windows
+
+For anything large, open an issue first so we can agree on the approach.
 
 ## License
 
