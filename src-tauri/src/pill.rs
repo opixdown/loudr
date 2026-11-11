@@ -1,0 +1,61 @@
+//! The floating pill: a small transparent window at the bottom centre of the
+//! screen that shows the waveform / spinner.
+//!
+//! The window is shown once at startup and then never hidden. When idle it
+//! simply draws nothing. Because it is never shown again later, it can never
+//! steal focus from the app the user is typing in, and because it ignores the
+//! mouse, clicks pass straight through it.
+
+use tauri::{AppHandle, Manager, PhysicalPosition};
+
+/// Gap between the pill window and the bottom of the usable screen area.
+const BOTTOM_MARGIN: f64 = 12.0;
+
+pub fn setup(app: &AppHandle) -> tauri::Result<()> {
+    let Some(window) = app.get_webview_window("pill") else {
+        return Ok(());
+    };
+    window.set_ignore_cursor_events(true)?;
+
+    #[cfg(target_os = "macos")]
+    {
+        use objc2::msg_send;
+        use objc2::runtime::AnyObject;
+        // Float above everything, on every Space, including over other
+        // apps' fullscreen windows.
+        const STATUS_WINDOW_LEVEL: isize = 25;
+        // canJoinAllSpaces | stationary | ignoresCycle | fullScreenAuxiliary
+        const BEHAVIOR: usize = (1 << 0) | (1 << 4) | (1 << 6) | (1 << 8);
+        let ns_window = window.ns_window()? as *mut AnyObject;
+        unsafe {
+            let _: () = msg_send![ns_window, setLevel: STATUS_WINDOW_LEVEL];
+            let _: () = msg_send![ns_window, setCollectionBehavior: BEHAVIOR];
+        }
+    }
+
+    reposition(app);
+    Ok(())
+}
+
+/// Move the pill to the bottom centre of the screen under the mouse cursor.
+pub fn reposition(app: &AppHandle) {
+    let Some(window) = app.get_webview_window("pill") else {
+        return;
+    };
+    let monitor = app
+        .cursor_position()
+        .ok()
+        .and_then(|p| app.monitor_from_point(p.x, p.y).ok().flatten())
+        .or_else(|| app.primary_monitor().ok().flatten());
+    let (Some(monitor), Ok(size)) = (monitor, window.outer_size()) else {
+        return;
+    };
+
+    // The work area excludes the Dock / taskbar, so the pill sits above it.
+    let area = monitor.work_area();
+    let x = area.position.x + (area.size.width as i32 - size.width as i32) / 2;
+    let y = area.position.y + area.size.height as i32
+        - size.height as i32
+        - (BOTTOM_MARGIN * monitor.scale_factor()) as i32;
+    let _ = window.set_position(PhysicalPosition::new(x, y));
+}
