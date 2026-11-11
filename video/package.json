@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "scripts": {
     "studio": "remotion studio src/index.ts",
-    "render": "remotion render src/index.ts Promo out/loudr-promo.mp4"
+    "render": "remotion render src/index.ts Promo out/loudr-promo.mp4",
+    "voiceover": "node scripts/voiceover.mjs"
   },
   "dependencies": {
     "@remotion/cli": "^4.0.542",
