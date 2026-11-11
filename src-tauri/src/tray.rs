@@ -44,8 +44,16 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
         ],
     )?;
 
+    // macOS menu bar icons are "templates": a black shape that the system
+    // recolours for light and dark menu bars. Windows uses the app icon.
+    #[cfg(target_os = "macos")]
+    let icon = tauri::image::Image::from_bytes(include_bytes!("../icons/tray-template.png"))?;
+    #[cfg(not(target_os = "macos"))]
+    let icon = app.default_window_icon().expect("bundle icon missing").clone();
+
     TrayIconBuilder::with_id("main")
-        .icon(app.default_window_icon().expect("bundle icon missing").clone())
+        .icon(icon)
+        .icon_as_template(cfg!(target_os = "macos"))
         .tooltip("Loudr")
         .menu(&menu)
         .show_menu_on_left_click(true)
