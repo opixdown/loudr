@@ -103,15 +103,8 @@ export default function Settings({ setup }: { setup: SetupState }) {
             ))}
           </select>
         </label>
-        {settings.language === "hinglish" ? (
-          <p className="hint">
-            Speak Hindi, or Hindi mixed with English, and it is typed in English letters: "kal
-            meeting hai". Uses its own 148 MB model.
-          </p>
-        ) : (
-          settings.language !== "en" && (
-            <p className="hint">Other languages use a separate multilingual model file.</p>
-          )
+        {settings.language !== "en" && (
+          <p className="hint">Other languages use a separate multilingual model file.</p>
         )}
 
         <label>

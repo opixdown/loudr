@@ -41,8 +41,6 @@ impl Transcriber {
     pub fn transcribe(&mut self, audio: &[f32], language: &str) -> Result<String, String> {
         let mut params = FullParams::new(SamplingStrategy::Greedy { best_of: 1 });
         // "auto" makes Whisper detect the language (multilingual models only).
-        // The Hinglish model was trained to write its output as "English".
-        let language = if language == crate::models::HINGLISH { "en" } else { language };
         params.set_language(Some(language));
         params.set_n_threads(4);
         params.set_no_context(true); // each clip is independent
