@@ -116,8 +116,29 @@ impl Engine {
             let (_, audio) = outputs[0].try_extract_tensor::<f32>()?;
             Ok(audio.to_vec())
         };
-        run().map_err(|e| format!("Speech failed: {e}"))
+        let audio = run().map_err(|e| format!("Speech failed: {e}"))?;
+        Ok(even_pauses(&audio))
     }
+}
+
+/// The model leaves an uneven stretch of silence before and after each
+/// chunk, which makes sentences sound disconnected when chunks are played
+/// back to back. Cut that silence and end with one short, fixed pause.
+fn even_pauses(audio: &[f32]) -> Vec<f32> {
+    const QUIET: f32 = 0.005;
+    // Kept around the speech so soft first and last sounds aren't clipped.
+    const MARGIN: usize = SAMPLE_RATE as usize * 70 / 1000;
+    const PAUSE: usize = SAMPLE_RATE as usize * 260 / 1000;
+
+    let Some(first) = audio.iter().position(|s| s.abs() > QUIET) else {
+        return Vec::new();
+    };
+    let last = audio.iter().rposition(|s| s.abs() > QUIET).unwrap_or(first);
+    let start = first.saturating_sub(MARGIN);
+    let end = (last + MARGIN).min(audio.len());
+    let mut out = audio[start..end].to_vec();
+    out.resize(out.len() + PAUSE, 0.0);
+    out
 }
 
 /// Read the voices file: a zip archive (stored, not compressed) with one

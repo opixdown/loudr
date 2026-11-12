@@ -12,7 +12,7 @@ import { mkdirSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { resolve } from "node:path";
 
 const VOICE = process.env.VOICE ?? "am_puck";
-const SPEED = process.env.SPEED ?? "1.18";
+const SPEED = process.env.SPEED ?? "1.1";
 const measureOnly = process.argv.includes("--measure");
 const LINES = JSON.parse(readFileSync("voiceover-speak-lines.json", "utf8"));
 
