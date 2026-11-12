@@ -32,14 +32,18 @@ export default function Speech({
   // The last error or saved file stays on screen after the worker goes idle.
   const [result, setResult] = useState<{ error?: string; saved?: string }>({});
   const [text, setText] = useState(draft);
+  // Start of the text that was read aloud last (its audio can be saved).
+  const [last, setLast] = useState<string | null>(null);
 
   useEffect(() => {
     api.listVoices().then(setVoices);
+    api.lastSpeech().then(setLast);
     const offDownload = on<DownloadProgress>("voice-download", (p) =>
       setDownload(p.done ? null : p),
     );
     const offSpeech = on<SpeechEvent>("speech", (event) => {
       setSpeech(event);
+      if (event.last !== undefined) setLast(event.last);
       if (event.error) setResult({ error: event.error });
       else if (event.saved) setResult({ saved: event.saved });
     });
@@ -125,7 +129,7 @@ export default function Speech({
       <section>
         <textarea
           value={text}
-          placeholder="Type or paste a script here to hear it, or to save it as an audio file."
+          placeholder="Type or paste a script here to hear it, or to save it as an MP3 or WAV file."
           aria-label="Script"
           spellCheck={false}
           onChange={(e) => {
@@ -144,7 +148,7 @@ export default function Speech({
             </button>
           )}
           <button disabled={empty || working} onClick={() => start(api.exportSpeech)}>
-            Save as audio
+            Save as audio…
           </button>
           {speech.state === "exporting" ? (
             <div className="download">
@@ -155,12 +159,32 @@ export default function Speech({
           ) : result.error ? (
             <span className="error">{result.error}</span>
           ) : result.saved ? (
-            <span className="hint">Saved to Downloads as {fileName(result.saved)}</span>
+            <span className="hint">Saved as {fileName(result.saved)}</span>
           ) : speech.state === "preparing" ? (
             <span className="hint">Getting the voice ready…</span>
           ) : null}
         </div>
       </section>
+
+      {last && (
+        <section>
+          <div className="row">
+            <div className="row-text">
+              <strong>Last read aloud</strong>
+              <span className="clip">{last}</span>
+            </div>
+            <button
+              disabled={working}
+              onClick={() => {
+                setResult({});
+                api.saveLastSpeech();
+              }}
+            >
+              Save audio…
+            </button>
+          </div>
+        </section>
+      )}
     </>
   );
 }

@@ -58,6 +58,8 @@ export type SpeechEvent = {
   error?: string | null;
   /** Path of the audio file an export just wrote. */
   saved?: string | null;
+  /** Start of the text read aloud last, whose audio can be saved. */
+  last?: string | null;
 };
 
 export type Status =
@@ -84,6 +86,8 @@ export const api = {
   speakText: (text: string) => invoke<void>("speak_text", { text }),
   stopSpeaking: () => invoke<void>("stop_speaking"),
   exportSpeech: (text: string) => invoke<void>("export_speech", { text }),
+  saveLastSpeech: () => invoke<void>("save_last_speech"),
+  lastSpeech: () => invoke<string | null>("last_speech"),
 };
 
 /** Subscribe to a backend event; returns a cleanup function for useEffect. */

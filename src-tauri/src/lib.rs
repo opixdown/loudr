@@ -33,6 +33,7 @@ pub fn run() {
                 .level_for("whisper_rs", log::LevelFilter::Warn)
                 .build(),
         )
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_autostart::init(
             tauri_plugin_autostart::MacosLauncher::LaunchAgent,
             None,
@@ -55,6 +56,8 @@ pub fn run() {
             commands::speak_text,
             commands::stop_speaking,
             commands::export_speech,
+            commands::save_last_speech,
+            commands::last_speech,
         ])
         .setup(|app| {
             // Menu bar app: no Dock icon, no app switcher entry.

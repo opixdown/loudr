@@ -1,5 +1,5 @@
-//! Text to speech: read the selected text aloud, speak a script, or save a
-//! script as an audio file. Runs fully offline with the Kokoro voice model.
+//! Text to speech: read the selected text aloud, speak a script, or save
+//! either as an MP3 or WAV file. Runs fully offline with the Kokoro voice model.
 //!
 //! Like dictation, the work happens on one worker thread that owns the model
 //! and the speaker stream.
@@ -94,8 +94,19 @@ enum Command {
     /// Copy the selection in the focused app and read it aloud.
     SpeakSelection,
     Speak(String),
-    /// Save the text as a WAV file in the Downloads folder.
+    /// Ask where to save, then write the text as an audio file.
     Export(String),
+    /// Save whatever was read aloud last.
+    SaveLast,
+}
+
+/// The most recent complete reading, kept so it can be saved without
+/// making the audio again.
+struct Spoken {
+    text: String,
+    voice: String,
+    speed: f32,
+    samples: Vec<f32>,
 }
 
 /// What the speech worker is doing, sent to the window as "speech" events.
@@ -108,6 +119,8 @@ struct SpeechEvent {
     error: Option<String>,
     /// Path of the file an export just wrote.
     saved: Option<String>,
+    /// The start of the text that was read aloud last and can be saved.
+    last: Option<String>,
 }
 
 fn emit(app: &AppHandle, state: &'static str, progress: f32) {
@@ -123,6 +136,12 @@ pub struct Speech {
     epoch: Arc<AtomicU64>,
     /// Commands sent and not yet finished.
     pending: Arc<AtomicUsize>,
+    /// The start of the text read aloud last, if it can still be saved.
+    last_preview: Arc<std::sync::Mutex<Option<String>>>,
+}
+
+pub fn last_preview(app: &AppHandle) -> Option<String> {
+    app.state::<Speech>().last_preview.lock().unwrap().clone()
 }
 
 fn request(app: &AppHandle, command: Command) {
@@ -153,6 +172,11 @@ pub fn export(app: &AppHandle, text: String) {
     request(app, Command::Export(text));
 }
 
+pub fn save_last(app: &AppHandle) {
+    stop(app);
+    request(app, Command::SaveLast);
+}
+
 /// The read-aloud key: start reading the selection, or stop if already
 /// speaking.
 pub fn toggle_selection(app: &AppHandle) {
@@ -171,19 +195,31 @@ pub fn spawn(app: &AppHandle) {
     let (tx, rx) = mpsc::channel::<(u64, Command)>();
     let epoch = Arc::new(AtomicU64::new(0));
     let pending = Arc::new(AtomicUsize::new(0));
-    app.manage(Speech { tx, epoch: epoch.clone(), pending: pending.clone() });
+    let last_preview = Arc::new(std::sync::Mutex::new(None));
+    app.manage(Speech {
+        tx,
+        epoch: epoch.clone(),
+        pending: pending.clone(),
+        last_preview: last_preview.clone(),
+    });
 
     let app = app.clone();
     std::thread::Builder::new()
         .name("speech".into())
         .spawn(move || {
             let mut engine: Option<Engine> = None;
+            let mut last: Option<Spoken> = None;
             loop {
                 let (sent_at, command) = match rx.recv_timeout(UNLOAD_AFTER) {
                     Ok(message) => message,
                     Err(RecvTimeoutError::Timeout) => {
                         if engine.take().is_some() {
                             log::info!("speech: voice model unloaded after being idle");
+                        }
+                        // Don't hold on to minutes of audio forever either.
+                        if last.take().is_some() {
+                            *last_preview.lock().unwrap() = None;
+                            let _ = app.emit("speech", SpeechEvent { state: "idle", ..Default::default() });
                         }
                         continue;
                     }
@@ -194,14 +230,23 @@ pub fn spawn(app: &AppHandle) {
                 let mut event = SpeechEvent { state: "idle", ..Default::default() };
                 if !cancelled() {
                     let result = match command {
-                        Command::SpeakSelection => paste::copy_selection(&app)
-                            .and_then(|text| speak_now(&app, &mut engine, &text, &cancelled)),
-                        Command::Speak(text) => speak_now(&app, &mut engine, &text, &cancelled),
-                        Command::Export(text) => {
-                            export_now(&app, &mut engine, &text, &cancelled).map(|path| {
-                                event.saved = path.map(|p| p.display().to_string());
-                            })
+                        Command::SpeakSelection => paste::copy_selection(&app).and_then(|text| {
+                            speak_now(&app, &mut engine, &mut last, &text, &cancelled)
+                        }),
+                        Command::Speak(text) => {
+                            speak_now(&app, &mut engine, &mut last, &text, &cancelled)
                         }
+                        Command::Export(text) => {
+                            export_now(&app, &mut engine, &mut last, &text, &cancelled)
+                                .map(|path| event.saved = path.map(|p| p.display().to_string()))
+                        }
+                        Command::SaveLast => match last.as_ref().map(|l| l.text.clone()) {
+                            Some(text) => {
+                                export_now(&app, &mut engine, &mut last, &text, &cancelled)
+                                    .map(|path| event.saved = path.map(|p| p.display().to_string()))
+                            }
+                            None => Err("Nothing has been read aloud yet.".into()),
+                        },
                     };
                     // Whoever cancelled has already updated the pill.
                     if !cancelled() {
@@ -212,6 +257,8 @@ pub fn spawn(app: &AppHandle) {
                     }
                     event.error = result.err();
                 }
+                event.last = last.as_ref().map(|l| l.text.chars().take(80).collect());
+                *last_preview.lock().unwrap() = event.last.clone();
                 // Only report "idle" when nothing else is queued behind this.
                 if pending.fetch_sub(1, Ordering::SeqCst) == 1 || event.error.is_some() || event.saved.is_some() {
                     let _ = app.emit("speech", event);
@@ -237,6 +284,7 @@ fn loaded<'a>(app: &AppHandle, engine: &'a mut Option<Engine>) -> Result<&'a mut
 fn speak_now(
     app: &AppHandle,
     engine: &mut Option<Engine>,
+    last: &mut Option<Spoken>,
     text: &str,
     cancelled: &dyn Fn() -> bool,
 ) -> Result<(), String> {
@@ -251,6 +299,7 @@ fn speak_now(
     let engine = loaded(app, engine)?;
     let s = settings::current(app);
     let player = Player::open()?;
+    let mut samples: Vec<f32> = Vec::new();
     for (index, chunk) in chunks.iter().enumerate() {
         if cancelled() {
             return Ok(());
@@ -260,6 +309,7 @@ fn speak_now(
             return Ok(());
         }
         player.push(&audio);
+        samples.extend(audio);
         if index == 0 {
             log::info!(
                 "speech: first audio after {:?} ({} chunks, voice {})",
@@ -275,40 +325,69 @@ fn speak_now(
             std::thread::sleep(Duration::from_millis(50));
         }
     }
+    // Everything has been made, so it can be saved even if playback is
+    // stopped early.
+    *last = Some(Spoken {
+        text: text.trim().to_string(),
+        voice: s.voice,
+        speed: s.voice_speed,
+        samples,
+    });
     player.finish(cancelled);
     Ok(())
 }
 
-/// Returns the saved file, or `None` if the export was cancelled.
+/// Ask where to save, make the audio (unless it was just read aloud) and
+/// write it. Returns the saved file, or `None` if the user cancelled.
 fn export_now(
     app: &AppHandle,
     engine: &mut Option<Engine>,
+    last: &mut Option<Spoken>,
     text: &str,
     cancelled: &dyn Fn() -> bool,
 ) -> Result<Option<PathBuf>, String> {
+    let text = text.trim();
     let chunks = text::chunks(text);
     if chunks.is_empty() {
         return Err("Nothing to save. Type or paste some text first.".into());
     }
+    let Some(path) = ask_where_to_save(app, text) else {
+        return Ok(None);
+    };
     emit(app, "exporting", 0.0);
-    let engine = loaded(app, engine)?;
+
     let s = settings::current(app);
-
-    let mut samples: Vec<f32> = Vec::new();
-    for (index, chunk) in chunks.iter().enumerate() {
-        if cancelled() {
-            return Ok(None);
+    let reusable = last
+        .as_ref()
+        .is_some_and(|l| l.text == text && l.voice == s.voice && l.speed == s.voice_speed);
+    if !reusable {
+        let engine = loaded(app, engine)?;
+        let mut samples: Vec<f32> = Vec::new();
+        for (index, chunk) in chunks.iter().enumerate() {
+            if cancelled() {
+                return Ok(None);
+            }
+            samples.extend(engine.synthesize(chunk, &s.voice, s.voice_speed)?);
+            emit(app, "exporting", (index + 1) as f32 / chunks.len() as f32);
         }
-        samples.extend(engine.synthesize(chunk, &s.voice, s.voice_speed)?);
-        emit(app, "exporting", (index + 1) as f32 / chunks.len() as f32);
+        *last = Some(Spoken {
+            text: text.to_string(),
+            voice: s.voice,
+            speed: s.voice_speed,
+            samples,
+        });
     }
+    let samples = &last.as_ref().unwrap().samples;
 
-    let folder = app
-        .path()
-        .download_dir()
-        .map_err(|e| format!("No Downloads folder: {e}"))?;
-    let path = free_path(&folder, &file_stem(text));
-    write_wav(&path, &samples).map_err(|e| format!("Could not save the file: {e}"))?;
+    let is_wav = path
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("wav"));
+    if is_wav {
+        write_wav(&path, samples).map_err(|e| format!("Could not save the file: {e}"))?;
+    } else {
+        let mp3 = encode_mp3(samples)?;
+        std::fs::write(&path, mp3).map_err(|e| format!("Could not save the file: {e}"))?;
+    }
     log::info!(
         "speech: saved {:.1}s to {}",
         samples.len() as f32 / SAMPLE_RATE as f32,
@@ -316,6 +395,65 @@ fn export_now(
     );
     reveal(&path);
     Ok(Some(path))
+}
+
+/// Show the system "save as" dialog, starting in Downloads with a name made
+/// from the text. The file type follows the extension: .mp3 (default) or .wav.
+fn ask_where_to_save(app: &AppHandle, text: &str) -> Option<PathBuf> {
+    use tauri_plugin_dialog::DialogExt;
+    let mut dialog = app
+        .dialog()
+        .file()
+        .set_title("Save audio")
+        .set_file_name(format!("{}.mp3", file_stem(text)))
+        .add_filter("MP3 audio", &["mp3"])
+        .add_filter("WAV audio", &["wav"]);
+    if let Ok(downloads) = app.path().download_dir() {
+        dialog = dialog.set_directory(downloads);
+    }
+    if let Some(window) = app.get_webview_window("settings") {
+        if window.is_visible().unwrap_or(false) {
+            dialog = dialog.set_parent(&window);
+        }
+    }
+    let mut path = dialog.blocking_save_file()?.into_path().ok()?;
+    let known = path
+        .extension()
+        .is_some_and(|e| e.eq_ignore_ascii_case("mp3") || e.eq_ignore_ascii_case("wav"));
+    if !known {
+        // Keep whatever the user typed and make it an MP3.
+        let mut name = path.file_name()?.to_os_string();
+        name.push(".mp3");
+        path.set_file_name(name);
+    }
+    Some(path)
+}
+
+/// Encode mono speech as MP3 (96 kbps, plenty for a voice at 24 kHz).
+fn encode_mp3(samples: &[f32]) -> Result<Vec<u8>, String> {
+    use mp3lame_encoder::{Bitrate, Builder, FlushNoGap, MonoPcm, Quality};
+    let failed = |what: &str| format!("MP3 encoding failed ({what})");
+
+    let mut builder = Builder::new().ok_or_else(|| failed("start"))?;
+    builder.set_num_channels(1).map_err(|_| failed("channels"))?;
+    builder.set_sample_rate(SAMPLE_RATE).map_err(|_| failed("sample rate"))?;
+    builder.set_brate(Bitrate::Kbps96).map_err(|_| failed("bitrate"))?;
+    builder.set_quality(Quality::Best).map_err(|_| failed("quality"))?;
+    let mut encoder = builder.build().map_err(|_| failed("setup"))?;
+
+    let pcm: Vec<i16> = samples
+        .iter()
+        .map(|s| (s.clamp(-1.0, 1.0) * i16::MAX as f32) as i16)
+        .collect();
+    let mut out = Vec::with_capacity(mp3lame_encoder::max_required_buffer_size(pcm.len()));
+    encoder
+        .encode_to_vec(MonoPcm(&pcm), &mut out)
+        .map_err(|_| failed("encode"))?;
+    out.reserve(7200);
+    encoder
+        .flush_to_vec::<FlushNoGap>(&mut out)
+        .map_err(|_| failed("finish"))?;
+    Ok(out)
 }
 
 /// "Loudr - first few words", safe to use as a file name.
@@ -330,17 +468,6 @@ fn file_stem(text: &str) -> String {
         .take(40)
         .collect();
     format!("Loudr - {}", words.trim())
-}
-
-/// A path in `folder` that doesn't exist yet: "name.wav", "name 2.wav", ...
-fn free_path(folder: &Path, stem: &str) -> PathBuf {
-    (1..)
-        .map(|n| match n {
-            1 => folder.join(format!("{stem}.wav")),
-            n => folder.join(format!("{stem} {n}.wav")),
-        })
-        .find(|p| !p.exists())
-        .unwrap()
 }
 
 fn write_wav(path: &Path, samples: &[f32]) -> Result<(), hound::Error> {
@@ -405,5 +532,8 @@ mod tests {
         }
         assert!(samples.len() > SAMPLE_RATE as usize);
         write_wav(Path::new(&out), &samples).unwrap();
+        let mp3 = encode_mp3(&samples).unwrap();
+        println!("mp3: {} bytes for {:.1}s", mp3.len(), samples.len() as f32 / SAMPLE_RATE as f32);
+        std::fs::write(Path::new(&out).with_extension("mp3"), mp3).unwrap();
     }
 }

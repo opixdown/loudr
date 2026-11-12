@@ -40,7 +40,7 @@
   telemetry.
 - **Fast.** The model stays loaded in memory (Metal on Apple Silicon). On an
   M1-class Mac a 5 second clip is typed out in about 0.4 seconds.
-- **Small.** The installer is about 21 MB, not counting the models.
+- **Small.** The installer is about 22 MB, not counting the models.
 - **Works everywhere you type.** Loudr pastes into whatever app has focus:
   editors, browsers, chat apps, terminals.
 - **Yours to change.** MIT licensed. Add the feature you want and send a pull
@@ -86,7 +86,10 @@ Open the **Text to speech** tab and download the voice once. Then:
 - **Read aloud:** select text in any app and tap **Right Command** (macOS)
   or **Right Ctrl** (Windows). Tap again to stop.
 - **Script to audio:** type or paste a script into the box. **Play** speaks
-  it; **Save as audio** writes a WAV file to your Downloads folder.
+  it; **Save as audio** asks where to put the file and writes an MP3 (or a
+  WAV, if you name the file `.wav`).
+- **Save what you just heard:** after reading a selection aloud, the tab
+  shows it under **Last read aloud** with a **Save audio** button.
 
 There are nine English voices (American and British) and a speed slider.
 
@@ -121,7 +124,8 @@ multilingual model of the same size, which is a separate download.
   `%APPDATA%\app.loudr.desktop` on Windows), in `models` and `voices`.
 - The voice is downloaded from the
   [kokoro-onnx](https://github.com/thewh1teagle/kokoro-onnx) release files.
-  Kokoro is Apache 2.0 licensed.
+  Kokoro is Apache 2.0 licensed. MP3 files are written with
+  [LAME](https://lame.sourceforge.io) (LGPL), which is compiled into the app.
 
 ## Measuring speed
 
@@ -190,7 +194,7 @@ hotkey up   -> close microphone -> resample to 16 kHz mono
 | `src-tauri/src/transcribe.rs` | Whisper model loading and inference            |
 | `src-tauri/src/paste.rs`      | Clipboard save, paste shortcut, restore        |
 | `src-tauri/src/pipeline.rs`   | The worker thread tying those together, with timing |
-| `src-tauri/src/tts/`          | Text to speech: phonemes, Kokoro inference, playback, WAV export |
+| `src-tauri/src/tts/`          | Text to speech: phonemes, Kokoro inference, playback, MP3 / WAV export |
 | `src-tauri/src/pill.rs`       | The always-on-top, click-through pill window   |
 | `src-tauri/src/models.rs`     | Model files and downloads                      |
 | `src-tauri/src/settings.rs`   | Settings file                                  |

@@ -33,10 +33,17 @@ fn clean(text: &str) -> String {
         if line.is_empty() {
             continue;
         }
-        let line: String = line
-            .chars()
-            .filter(|c| !matches!(c, '*' | '`' | '_' | '#' | '~' | '|'))
-            .collect();
+        let mut previous = ' ';
+        let mut cleaned = String::with_capacity(line.len());
+        for c in line.chars().filter(|c| !matches!(c, '*' | '`' | '_' | '#' | '~' | '|')) {
+            // "MP3" and "GPT4" are read as a name followed by a number.
+            if c.is_ascii_digit() && previous.is_alphabetic() {
+                cleaned.push(' ');
+            }
+            cleaned.push(c);
+            previous = c;
+        }
+        let line = cleaned;
         out.push_str(line.trim());
         // A heading or list item without closing punctuation still ends a thought.
         if !line.trim_end().ends_with(['.', '!', '?', ':', ';', ',']) {
@@ -237,6 +244,11 @@ mod tests {
     fn splits_sentences_and_headings() {
         let c = chunks("# Title\n\nFirst one. Second one!\n- item");
         assert_eq!(c, ["Title.", "First one.", "Second one!", "item."]);
+    }
+
+    #[test]
+    fn numbers_stuck_to_names_are_separated() {
+        assert_eq!(chunks("Save it as MP3."), ["Save it as MP 3."]);
     }
 
     #[test]

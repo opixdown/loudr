@@ -273,9 +273,21 @@ pub fn stop_speaking(app: AppHandle) {
     let _ = app.emit("speech", serde_json::json!({ "state": "idle", "progress": 0.0 }));
 }
 
-/// Save text as an audio file in the Downloads folder. The result arrives
-/// as a "speech" event carrying the file's path.
+/// Ask where to save, then write text as an MP3 or WAV file. The result
+/// arrives as a "speech" event carrying the file's path.
 #[tauri::command]
 pub fn export_speech(app: AppHandle, text: String) {
     tts::export(&app, text);
+}
+
+/// The start of the text that was read aloud last, if its audio can be saved.
+#[tauri::command]
+pub fn last_speech(app: AppHandle) -> Option<String> {
+    tts::last_preview(&app)
+}
+
+/// Save the audio that was read aloud last (a selection or a script).
+#[tauri::command]
+pub fn save_last_speech(app: AppHandle) {
+    tts::save_last(&app);
 }
