@@ -50,3 +50,43 @@ fetch(`https://api.github.com/repos/${REPO}`)
     }
   })
   .catch(() => {});
+
+// "Buy me a coffee": paste the page's address here and the button appears.
+const COFFEE_URL = "";
+if (COFFEE_URL) {
+  const coffee = document.getElementById("coffee");
+  coffee.href = COFFEE_URL;
+  coffee.hidden = false;
+}
+
+// A soft light that trails the cursor, and surfaces that light up under it.
+// Skipped on touch screens and for people who ask for less motion.
+const finePointer = matchMedia("(hover: hover) and (pointer: fine)").matches;
+const calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+if (finePointer && !calm) {
+  const glow = document.querySelector(".glow");
+  let x, y, targetX, targetY, frame = 0;
+  const follow = () => {
+    x += (targetX - x) * 0.14;
+    y += (targetY - y) * 0.14;
+    glow.style.transform = `translate3d(${x}px, ${y}px, 0)`;
+    const settled = Math.abs(targetX - x) + Math.abs(targetY - y) < 0.3;
+    frame = settled ? 0 : requestAnimationFrame(follow);
+  };
+  addEventListener("pointermove", (event) => {
+    targetX = event.clientX;
+    targetY = event.clientY;
+    if (x === undefined) { x = targetX; y = targetY; }
+    glow.classList.add("on");
+    if (!frame) frame = requestAnimationFrame(follow);
+  });
+  document.documentElement.addEventListener("pointerleave", () => glow.classList.remove("on"));
+
+  for (const surface of document.querySelectorAll("[data-spot]")) {
+    surface.addEventListener("pointermove", (event) => {
+      const box = surface.getBoundingClientRect();
+      surface.style.setProperty("--mx", `${event.clientX - box.left}px`);
+      surface.style.setProperty("--my", `${event.clientY - box.top}px`);
+    });
+  }
+}

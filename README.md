@@ -12,7 +12,7 @@
 </p>
 
 <p align="center">
-  <a href="https://loudr-sigma.vercel.app"><b>Website</b></a> ·
+  <a href="https://loudrapp.vercel.app"><b>Website</b></a> ·
   <a href="https://github.com/opixdown/loudr/releases/latest"><b>Download</b></a> ·
   <a href="#build-from-source">Build from source</a> ·
   <a href="#contributing">Contribute</a>
