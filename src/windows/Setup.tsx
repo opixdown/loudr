@@ -1,6 +1,21 @@
 // Pieces shared by the first-run flow and the settings window: permission
 // rows and the model picker with its download progress bar.
+import type { ReactNode } from "react";
 import { api, type DownloadProgress, type ModelInfo, type SetupState } from "../lib/ipc";
+
+/** A numbered "how to use it" strip. */
+export function Steps({ steps }: { steps: ReactNode[] }) {
+  return (
+    <ol className="steps">
+      {steps.map((step, i) => (
+        <li key={i}>
+          <span className="step-number">{i + 1}</span>
+          <span>{step}</span>
+        </li>
+      ))}
+    </ol>
+  );
+}
 
 export function Check({ ok }: { ok: boolean }) {
   return <span className={ok ? "check ok" : "check"}>{ok ? "✓" : ""}</span>;

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { api, on, type Settings as SettingsType, type SetupState } from "../lib/ipc";
 import { useModels } from "../lib/hooks";
 import { LANGUAGES, THEMES } from "../lib/options";
-import { AccessibilityRow, DownloadBar, MicrophoneRow, ModelSelect } from "./Setup";
+import { AccessibilityRow, DownloadBar, MicrophoneRow, ModelSelect, Steps } from "./Setup";
 import Speech from "./Speech";
 
 type Tab = "dictation" | "speech";
@@ -65,10 +65,19 @@ export default function Settings({ setup }: { setup: SetupState }) {
         <Speech setup={setup} settings={settings} update={update} />
       ) : (
       <section>
+        <Steps
+          steps={[
+            "Click where you want to type, in any app.",
+            <>
+              Hold <kbd>{setup.hotkey_label}</kbd> and speak.
+            </>,
+            "Let go. Your words are typed in.",
+          ]}
+        />
         <KeyRow
           target="hold"
-          title="Hold to talk"
-          hint="Hold this key, speak, then release."
+          title="Dictation key"
+          hint="Keep it held down while you speak."
           label={setup.hotkey_label}
         />
 
@@ -142,7 +151,9 @@ export default function Settings({ setup }: { setup: SetupState }) {
       </section>
       )}
 
-      <p className="hint">Loudr works offline. Audio and text never leave this computer.</p>
+      {tab === "dictation" && (
+        <p className="hint">Loudr works offline. Audio and text never leave this computer.</p>
+      )}
     </main>
   );
 }

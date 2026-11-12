@@ -11,7 +11,7 @@ import {
   type Voices,
 } from "../lib/ipc";
 import { KeyRow } from "./Settings";
-import { DownloadBar } from "./Setup";
+import { DownloadBar, Steps } from "./Setup";
 
 const IDLE: SpeechEvent = { state: "idle", progress: 0 };
 // Kept outside the component so the script survives switching tabs.
@@ -57,27 +57,32 @@ export default function Speech({
   if (!setup.voice_ready) {
     const busy = setup.downloading || (download !== null && !download.error);
     return (
-      <section>
-        <div className="row">
-          <div className="row-text">
-            <strong>Voice</strong>
-            <span>
-              Loudr can read text aloud and turn a script into an audio file, with a natural
-              voice that runs on this computer. One-time download, about {voices.download_mb} MB.
-            </span>
-          </div>
-          <button
-            className="primary"
-            disabled={busy}
-            onClick={() => {
-              setDownload(null);
-              api.downloadVoice().catch(() => {});
-            }}
-          >
-            {busy ? "Downloading…" : "Download"}
-          </button>
-        </div>
+      <section className="intro">
+        <h2>Give Loudr a voice</h2>
+        <p>A natural voice that runs on this computer. Nothing you read is sent anywhere.</p>
+        <ul>
+          <li>
+            <strong>Read aloud.</strong> Select text in any app and tap a key to hear it.
+          </li>
+          <li>
+            <strong>Script to audio.</strong> Paste a script and save it as an MP3.
+          </li>
+          <li>
+            <strong>Nine voices.</strong> American and British, with a speed control.
+          </li>
+        </ul>
+        <button
+          className="primary wide"
+          disabled={busy}
+          onClick={() => {
+            setDownload(null);
+            api.downloadVoice().catch(() => {});
+          }}
+        >
+          {busy ? "Downloading…" : `Download voice · ${voices.download_mb} MB`}
+        </button>
         <DownloadBar progress={download} />
+        {!busy && !download?.error && <p className="hint">One time only. Takes a minute or two.</p>}
       </section>
     );
   }
@@ -92,10 +97,19 @@ export default function Speech({
   return (
     <>
       <section>
+        <Steps
+          steps={[
+            "Select text in any app.",
+            <>
+              Tap <kbd>{setup.speak_label}</kbd>
+            </>,
+            "Listen. Tap again to stop.",
+          ]}
+        />
         <KeyRow
           target="speak"
-          title="Read aloud"
-          hint="Select text in any app, then tap this key. Tap again to stop."
+          title="Read-aloud key"
+          hint="A quick tap. Don't hold it."
           label={setup.speak_label}
         />
 
@@ -126,10 +140,11 @@ export default function Speech({
         </label>
       </section>
 
-      <section>
+      <section className="composer">
+        <strong>Script to audio</strong>
         <textarea
           value={text}
-          placeholder="Type or paste a script here to hear it, or to save it as an MP3 or WAV file."
+          placeholder="Type or paste a script. Play it, or save it as an MP3."
           aria-label="Script"
           spellCheck={false}
           onChange={(e) => {
