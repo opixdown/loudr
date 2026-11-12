@@ -22,8 +22,8 @@ pub fn set(app: &AppHandle, status: Status) {
         log::error!("{message}");
     }
     if status != Status::Idle {
-        // Put the pill on whichever screen the user is working on.
-        pill::reposition(app);
+        // Put the pill on whichever screen the user is working on, in front.
+        pill::bring_forward(app);
     }
     let _ = app.emit_to("pill", "status", &status);
 

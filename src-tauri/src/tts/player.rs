@@ -12,7 +12,9 @@ use std::time::Duration;
 
 /// An open output stream. Dropping it stops playback at once.
 pub struct Player {
-    _stream: cpal::Stream,
+    stream: cpal::Stream,
+    /// The stream only starts running once there is something to play.
+    started: std::cell::Cell<bool>,
     /// Mono samples at the device's sample rate, waiting to be played.
     queue: Arc<Mutex<VecDeque<f32>>>,
     device_rate: u32,
@@ -37,11 +39,9 @@ impl Player {
             other => return Err(format!("Unsupported speaker format: {other:?}")),
         }
         .map_err(|e| format!("Could not open speakers: {e}"))?;
-        stream
-            .play()
-            .map_err(|e| format!("Could not start speakers: {e}"))?;
         Ok(Self {
-            _stream: stream,
+            stream,
+            started: std::cell::Cell::new(false),
             queue,
             device_rate: supported.sample_rate(),
         })
@@ -51,6 +51,11 @@ impl Player {
     pub fn push(&self, samples: &[f32]) {
         let converted = resample(samples, SAMPLE_RATE, self.device_rate);
         self.queue.lock().unwrap().extend(converted);
+        if !self.started.replace(true) {
+            if let Err(e) = self.stream.play() {
+                log::error!("speech: could not start speakers: {e}");
+            }
+        }
     }
 
     /// Seconds of audio queued but not yet played.
