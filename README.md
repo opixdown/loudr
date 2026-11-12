@@ -41,7 +41,7 @@
   telemetry.
 - **Fast.** The model stays loaded in memory (Metal on Apple Silicon). On an
   M1-class Mac a 5 second clip is typed out in about 0.4 seconds.
-- **Small.** The installer is about 22 MB, not counting the models.
+- **Small.** The installer is about 22 MB on macOS and 32 MB on Windows, not counting the models.
 - **Works everywhere you type.** Loudr pastes into whatever app has focus:
   editors, browsers, chat apps, terminals.
 - **Yours to change.** MIT licensed. Add the feature you want and send a pull
