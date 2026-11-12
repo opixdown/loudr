@@ -5,7 +5,8 @@
   "scripts": {
     "studio": "remotion studio src/index.ts",
     "render": "remotion render src/index.ts Promo out/loudr-promo.mp4",
-    "voiceover": "node scripts/voiceover.mjs"
+    "voiceover": "node scripts/voiceover.mjs",
+    "render:speak": "remotion render src/index.ts Speak out/loudr-speak.mp4"
   },
   "dependencies": {
     "@remotion/cli": "^4.0.542",

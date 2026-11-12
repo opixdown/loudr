@@ -107,6 +107,29 @@ export const Pill: React.FC<{ children: React.ReactNode; scale?: number }> = ({
   </div>
 );
 
+/** The pill's "reading aloud" animation: five bars rising and falling. */
+export const SpeakingBars: React.FC<{ height?: number; width?: number; color?: string }> = ({
+  height = 48,
+  width = 7,
+  color = C.ink,
+}) => {
+  const frame = useCurrentFrame();
+  const offsets = [0, 0.6, 0.3, 0.75, 0.15];
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap: width, height }}>
+      {offsets.map((offset, i) => {
+        const level = 0.25 + 0.75 * Math.abs(Math.sin((frame / 27 + offset) * Math.PI));
+        return (
+          <div
+            key={i}
+            style={{ width, height: level * height, borderRadius: width / 2, background: color }}
+          />
+        );
+      })}
+    </div>
+  );
+};
+
 export const Spinner: React.FC<{ size?: number }> = ({ size = 36 }) => {
   const frame = useCurrentFrame();
   return (

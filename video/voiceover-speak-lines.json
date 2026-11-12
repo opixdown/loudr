@@ -1,0 +1,9 @@
+[
+  { "id": "intro", "say": "Hi. I'm the voice inside Loudr." },
+  { "id": "turn", "say": "Loudr already types what you say. Now, it talks back." },
+  { "id": "read", "say": "Select text in any app. Tap one key. Then just listen." },
+  { "id": "script", "say": "Or paste a script, pick a voice, and save it as an MP3." },
+  { "id": "offline", "say": "It all runs on your computer. Nothing you select is sent anywhere." },
+  { "id": "free", "say": "Nine voices. No account. No limits." },
+  { "id": "outro", "say": "Loudr. Free and open source, on GitHub." }
+]

@@ -515,6 +515,8 @@ mod tests {
             "Loudr can now read text aloud. Select anything, press a key, and listen.".into(),
         );
 
+        let speed: f32 = std::env::var("LOUDR_SPEED").map_or(1.0, |s| s.parse().unwrap());
+
         let started = Instant::now();
         let mut engine = Engine::load(&dir.join(MODEL_FILE), &dir.join(VOICES_FILE)).unwrap();
         println!("loaded in {:?}", started.elapsed());
@@ -522,7 +524,7 @@ mod tests {
         let mut samples = Vec::new();
         for chunk in text::chunks(&text) {
             let started = Instant::now();
-            let audio = engine.synthesize(&chunk, &voice, 1.0).unwrap();
+            let audio = engine.synthesize(&chunk, &voice, speed).unwrap();
             println!(
                 "{:?} for {:.1}s of audio: {chunk}",
                 started.elapsed(),

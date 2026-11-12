@@ -8,7 +8,7 @@ import { C } from "./theme";
 type SceneProps = { duration: number };
 const clamp = { extrapolateLeft: "clamp", extrapolateRight: "clamp" } as const;
 
-const headline: React.CSSProperties = {
+export const headline: React.CSSProperties = {
   fontSize: 104,
   fontWeight: 600,
   letterSpacing: "-0.035em",
@@ -16,14 +16,14 @@ const headline: React.CSSProperties = {
   textAlign: "center",
   margin: 0,
 };
-const sub: React.CSSProperties = {
+export const sub: React.CSSProperties = {
   fontSize: 42,
   color: C.muted,
   textAlign: "center",
   margin: 0,
   letterSpacing: "-0.01em",
 };
-const column = (gap: number): React.CSSProperties => ({
+export const column = (gap: number): React.CSSProperties => ({
   display: "flex",
   flexDirection: "column",
   alignItems: "center",
@@ -323,7 +323,11 @@ export const Demo: React.FC<SceneProps> = ({ duration }) => {
 };
 
 /* 5. "It runs fully offline. Your voice never leaves your computer." */
-export const Offline: React.FC<SceneProps> = ({ duration }) => {
+export const Offline: React.FC<SceneProps & { title?: string; line?: string }> = ({
+  duration,
+  title = "Fully offline.",
+  line = "Your voice never leaves your computer.",
+}) => {
   const frame = useCurrentFrame();
   const slash = interpolate(frame, [8, 20], [0, 1], clamp);
   return (
@@ -353,10 +357,10 @@ export const Offline: React.FC<SceneProps> = ({ duration }) => {
           />
         </svg>
         <Rise at={4}>
-          <h1 style={headline}>Fully offline.</h1>
+          <h1 style={headline}>{title}</h1>
         </Rise>
         <Rise at={0.42 * duration}>
-          <p style={sub}>Your voice never leaves your computer.</p>
+          <p style={sub}>{line}</p>
         </Rise>
       </div>
     </Scene>
@@ -364,13 +368,16 @@ export const Offline: React.FC<SceneProps> = ({ duration }) => {
 };
 
 /* 6. "No account. No limits. No subscription." */
-export const Free: React.FC<SceneProps> = ({ duration }) => {
+const FREE_LINES: [string, number][] = [
+  ["No account.", 0.02],
+  ["No limits.", 0.36],
+  ["No subscription.", 0.62],
+];
+export const Free: React.FC<SceneProps & { lines?: [string, number][] }> = ({
+  duration,
+  lines = FREE_LINES,
+}) => {
   const frame = useCurrentFrame();
-  const lines: [string, number][] = [
-    ["No account.", 0.02],
-    ["No limits.", 0.36],
-    ["No subscription.", 0.62],
-  ];
   return (
     <Scene duration={duration}>
       <div style={{ ...column(8), alignItems: "flex-start" }}>
@@ -463,7 +470,9 @@ export const OpenSource: React.FC<SceneProps> = ({ duration }) => {
 };
 
 /* 8. "Loudr. Free, on GitHub." */
-export const Outro: React.FC<SceneProps> = () => (
+export const Outro: React.FC<
+  SceneProps & { line?: string }
+> = ({ line = "Free, offline, open-source voice typing. macOS and Windows." }) => (
   // No fade-out: the video ends on this frame.
   <Scene duration={100000}>
     <div style={column(30)}>
@@ -474,7 +483,7 @@ export const Outro: React.FC<SceneProps> = () => (
         <h1 style={{ ...headline, fontSize: 130 }}>Loudr</h1>
       </Rise>
       <Rise at={12}>
-        <p style={sub}>Free, offline, open-source voice typing. macOS and Windows.</p>
+        <p style={sub}>{line}</p>
       </Rise>
       <Rise at={20} style={{ marginTop: 20 }}>
         <div
