@@ -5,6 +5,7 @@
 //! and the speaker stream.
 
 mod engine;
+mod hindi;
 mod player;
 mod text;
 
@@ -21,7 +22,8 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
 
-/// (id, label). The first letter of the id is the accent, the second the
+/// (id, label). The first letter of the id is the language or accent ("h"
+/// voices read Hindi, in either script, and English), the second the
 /// gender; the ids are the names used inside the voices file.
 pub const VOICES: &[(&str, &str)] = &[
     ("am_puck", "Puck · American, male"),
@@ -33,6 +35,10 @@ pub const VOICES: &[(&str, &str)] = &[
     ("af_nicole", "Nicole · American, female"),
     ("bm_george", "George · British, male"),
     ("bf_emma", "Emma · British, female"),
+    ("hf_alpha", "Alpha · Hindi and Hinglish, female"),
+    ("hf_beta", "Beta · Hindi and Hinglish, female"),
+    ("hm_omega", "Omega · Hindi and Hinglish, male"),
+    ("hm_psi", "Psi · Hindi and Hinglish, male"),
 ];
 pub const DEFAULT_VOICE: &str = "am_puck";
 

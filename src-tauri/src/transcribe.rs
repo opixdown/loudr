@@ -93,6 +93,8 @@ mod tests {
     fn transcribes_wav_file() {
         let model = std::env::var("LOUDR_MODEL").expect("set LOUDR_MODEL");
         let wav = std::env::var("LOUDR_WAV").expect("set LOUDR_WAV");
+        // Language code for multilingual models (LOUDR_LANG=hi).
+        let language = std::env::var("LOUDR_LANG").unwrap_or("en".into());
 
         let mut reader = hound::WavReader::open(wav).unwrap();
         let rate = reader.spec().sample_rate;
@@ -111,7 +113,7 @@ mod tests {
 
         for run in 1..=3 {
             let t = Instant::now();
-            let text = transcriber.transcribe(&audio, "en").unwrap();
+            let text = transcriber.transcribe(&audio, &language).unwrap();
             println!("run {run}: {:?} -> {text}", t.elapsed());
             assert!(!text.is_empty());
         }

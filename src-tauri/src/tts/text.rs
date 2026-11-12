@@ -35,7 +35,12 @@ fn clean(text: &str) -> String {
         }
         let mut previous = ' ';
         let mut cleaned = String::with_capacity(line.len());
-        for c in line.chars().filter(|c| !matches!(c, '*' | '`' | '_' | '#' | '~' | '|')) {
+        let readable = line
+            .chars()
+            .filter(|c| !matches!(c, '*' | '`' | '_' | '#' | '~' | '|'))
+            // The Hindi full stop ends a sentence like any other.
+            .map(|c| if matches!(c, '।' | '॥') { '.' } else { c });
+        for c in readable {
             // "MP3" and "GPT4" are read as a name followed by a number.
             if c.is_ascii_digit() && previous.is_alphabetic() {
                 cleaned.push(' ');

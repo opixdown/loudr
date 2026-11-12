@@ -68,7 +68,7 @@ export default function Speech({
             <strong>Script to audio.</strong> Paste a script and save it as an MP3.
           </li>
           <li>
-            <strong>Nine voices.</strong> American and British, with a speed control.
+            <strong>Thirteen voices.</strong> American, British and Hindi, with a speed control.
           </li>
         </ul>
         <button
@@ -123,6 +123,11 @@ export default function Speech({
             ))}
           </select>
         </label>
+        {settings.voice.startsWith("h") && (
+          <p className="hint">
+            Reads Hindi, Hinglish (Hindi typed in English letters) and English.
+          </p>
+        )}
 
         <label>
           <span>Speed</span>

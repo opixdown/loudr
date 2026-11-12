@@ -1,6 +1,6 @@
 //! The Kokoro voice model: text -> phonemes -> audio, all on this computer.
 
-use super::text;
+use super::{hindi, text};
 use misaki_rs::fallback::FallbackError;
 use misaki_rs::{Fallback, G2P, Language};
 use ort::environment::Environment;
@@ -24,6 +24,15 @@ impl Fallback for SoundOut {
     }
 }
 
+/// For the Hindi voices, unknown words are far more often romanised Hindi
+/// than English names.
+struct SoundOutHindi;
+impl Fallback for SoundOutHindi {
+    fn phonemize(&self, word: &str) -> Result<String, FallbackError> {
+        Ok(hindi::roman_word(word))
+    }
+}
+
 pub struct Engine {
     // Declared before the environment so it is dropped first.
     session: Session,
@@ -38,6 +47,8 @@ pub struct Engine {
     american: G2P,
     /// Only built when a British voice is first used.
     british: Option<G2P>,
+    /// English reader used inside Hindi speech; built on first use.
+    english_in_hindi: Option<G2P>,
 }
 
 impl Engine {
@@ -71,21 +82,32 @@ impl Engine {
             vocab,
             american: G2P::with_fallback(Language::EnglishUS, Some(Box::new(SoundOut))),
             british: None,
+            english_in_hindi: None,
         })
     }
 
     /// Speak one chunk of text (a sentence or so). Returns mono samples at
     /// `SAMPLE_RATE`.
     pub fn synthesize(&mut self, text: &str, voice: &str, speed: f32) -> Result<Vec<f32>, String> {
-        // Voice names start with the accent: "a" American, "b" British.
-        let g2p = if voice.starts_with('b') {
-            self.british.get_or_insert_with(|| {
-                G2P::with_fallback(Language::EnglishGB, Some(Box::new(SoundOut)))
+        // Voice names start with the language or accent: "a" American,
+        // "b" British, "h" Hindi.
+        let phonemes = if voice.starts_with('h') {
+            let english = self.english_in_hindi.get_or_insert_with(|| {
+                G2P::with_fallback(Language::EnglishUS, Some(Box::new(SoundOutHindi)))
+            });
+            hindi::phonemize(text, |run| {
+                english.g2p(run).map(|(p, _)| hindi::indian_english(&p)).unwrap_or_default()
             })
         } else {
-            &self.american
+            let g2p = if voice.starts_with('b') {
+                self.british.get_or_insert_with(|| {
+                    G2P::with_fallback(Language::EnglishGB, Some(Box::new(SoundOut)))
+                })
+            } else {
+                &self.american
+            };
+            g2p.g2p(text).map_err(|e| format!("Could not read text: {e}"))?.0
         };
-        let (phonemes, _) = g2p.g2p(text).map_err(|e| format!("Could not read text: {e}"))?;
 
         let mut tokens: Vec<i64> = phonemes
             .chars()

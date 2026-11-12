@@ -33,7 +33,7 @@
 - **Reads aloud.** Select text in any app and tap a key to hear it, or paste
   a script and save it as an MP3. The voice
   ([Kokoro](https://huggingface.co/hexgrad/Kokoro-82M)) runs on your
-  computer, with nine voices to pick from.
+  computer, with thirteen voices to pick from, including Hindi.
 - **Types what you say.** Hold a key, speak, release, and the text lands in
   whatever app has focus. Speech is transcribed on your computer with
   [whisper.cpp](https://github.com/ggerganov/whisper.cpp).
@@ -94,13 +94,15 @@ Open the **Text to speech** tab and download the voice once. Then:
 - **Save what you just heard:** after reading a selection aloud, the tab
   shows it under **Last read aloud** with a **Save audio** button.
 
-There are nine English voices (American and British) and a speed slider.
+There are nine English voices (American and British), four Hindi voices and a
+speed slider. The Hindi voices read Hindi in Devanagari, Hindi typed in English
+letters ("kal meeting hai") and English words mixed into either.
 
 | Setting         | Choices                                                         |
 | --------------- | --------------------------------------------------------------- |
 | Hold to talk    | Any modifier key (left or right) or function key; press Change and hit the key |
 | Read aloud      | Same choice of keys; a modifier key only triggers when tapped on its own |
-| Voice, Speed    | Nine English voices; 0.7× to 1.5×                               |
+| Voice, Speed    | Nine English and four Hindi voices; 0.7× to 1.5×                |
 | Model           | Tiny (75 MB), Base (142 MB), Small (466 MB), Medium (1.5 GB)     |
 | Language        | English, auto-detect, and other common languages                |
 | Microphone      | System default or a specific device                             |
