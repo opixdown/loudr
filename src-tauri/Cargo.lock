@@ -2415,6 +2415,7 @@ dependencies = [
  "misaki-rs",
  "mp3lame-encoder",
  "objc2",
+ "objc2-foundation",
  "ort",
  "serde",
  "serde_json",

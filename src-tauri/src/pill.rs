@@ -6,7 +6,7 @@
 //! Loudr, so it can never steal focus from the app the user is typing in,
 //! and because it ignores the mouse, clicks pass straight through it.
 
-use tauri::{AppHandle, Manager, PhysicalPosition};
+use tauri::{AppHandle, Manager};
 
 /// Gap between the pill window and the bottom of the usable screen area.
 const BOTTOM_MARGIN: f64 = 12.0;
@@ -101,17 +101,68 @@ fn float_on_top(window: &tauri::WebviewWindow) {
 /// Make sure the pill is visible on the screen the user is working on.
 /// Call this whenever the pill is about to show something.
 pub fn bring_forward(app: &AppHandle) {
-    reposition(app);
     let handle = app.clone();
     // Window calls must happen on the main thread.
     let _ = app.run_on_main_thread(move || {
+        reposition(&handle);
         if let Some(window) = handle.get_webview_window("pill") {
             float_on_top(&window);
         }
     });
 }
 
+/// Move the pill to the bottom centre of the screen the mouse is on.
+///
+/// This asks macOS directly, in its own point coordinates. Going through
+/// pixel positions goes wrong when two monitors have different pixel
+/// densities (a Retina laptop next to an ordinary external screen).
+#[cfg(target_os = "macos")]
+pub fn reposition(app: &AppHandle) {
+    use objc2::runtime::{AnyClass, AnyObject};
+    use objc2::msg_send;
+    use objc2_foundation::{NSPoint, NSRect};
+
+    let Some(window) = app.get_webview_window("pill") else {
+        return;
+    };
+    let (Ok(ns_window), Some(event), Some(screen_class)) = (
+        window.ns_window(),
+        AnyClass::get(c"NSEvent"),
+        AnyClass::get(c"NSScreen"),
+    ) else {
+        return;
+    };
+    let ns_window = ns_window as *mut AnyObject;
+    unsafe {
+        let mouse: NSPoint = msg_send![event, mouseLocation];
+        let screens: *mut AnyObject = msg_send![screen_class, screens];
+        let count: usize = msg_send![screens, count];
+        for index in 0..count {
+            let screen: *mut AnyObject = msg_send![screens, objectAtIndex: index];
+            let frame: NSRect = msg_send![screen, frame];
+            let inside = mouse.x >= frame.origin.x
+                && mouse.x < frame.origin.x + frame.size.width
+                && mouse.y >= frame.origin.y
+                && mouse.y < frame.origin.y + frame.size.height;
+            if !inside {
+                continue;
+            }
+            // The visible frame leaves out the Dock and the menu bar, so the
+            // pill sits just above the Dock. Here y grows upwards.
+            let area: NSRect = msg_send![screen, visibleFrame];
+            let size: NSRect = msg_send![ns_window, frame];
+            let origin = NSPoint::new(
+                area.origin.x + (area.size.width - size.size.width) / 2.0,
+                area.origin.y + BOTTOM_MARGIN,
+            );
+            let _: () = msg_send![ns_window, setFrameOrigin: origin];
+            return;
+        }
+    }
+}
+
 /// Move the pill to the bottom centre of the screen under the mouse cursor.
+#[cfg(not(target_os = "macos"))]
 pub fn reposition(app: &AppHandle) {
     let Some(window) = app.get_webview_window("pill") else {
         return;
@@ -131,5 +182,5 @@ pub fn reposition(app: &AppHandle) {
     let y = area.position.y + area.size.height as i32
         - size.height as i32
         - (BOTTOM_MARGIN * monitor.scale_factor()) as i32;
-    let _ = window.set_position(PhysicalPosition::new(x, y));
+    let _ = window.set_position(tauri::PhysicalPosition::new(x, y));
 }
