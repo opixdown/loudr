@@ -1,0 +1,60 @@
+# Starts the Windows build and checks that it stays running.
+#
+# Nobody on the project develops on Windows, so this is the only regular
+# proof that the app opens there. If it stops within the first seconds, the
+# reason (crash.log) and the app's log are printed and the run fails.
+name: Windows startup
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "src-tauri/**"
+      - ".github/workflows/windows-startup.yml"
+  workflow_dispatch:
+
+jobs:
+  start:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - run: npm ci
+
+      # The same optimised build that goes into the installer.
+      - run: npm run tauri build -- --no-bundle
+
+      - name: Start Loudr and see if it stays up
+        shell: pwsh
+        env:
+          LOUDR_NO_CRASH_DIALOG: "1"
+        run: |
+          $logs = Join-Path $env:LOCALAPPDATA "app.loudr.desktop\logs"
+          $app = Start-Process -FilePath "src-tauri\target\release\loudr.exe" -PassThru
+          Start-Sleep -Seconds 25
+          $stopped = $app.HasExited
+          if (Test-Path $logs) {
+            Get-ChildItem $logs | ForEach-Object {
+              Write-Host "===== $($_.Name) ====="
+              Get-Content $_.FullName
+            }
+          } else {
+            Write-Host "No log folder at $logs"
+          }
+          if ($stopped) {
+            Write-Host "Loudr stopped on its own, exit code $($app.ExitCode)"
+            exit 1
+          }
+          Write-Host "Loudr was still running after 25 seconds"
+          Stop-Process -Id $app.Id -Force

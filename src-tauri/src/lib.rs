@@ -1,5 +1,6 @@
 mod audio;
 mod commands;
+mod crash;
 mod hotkey;
 mod models;
 mod paste;
@@ -20,6 +21,7 @@ use tauri::{Manager, WindowEvent};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    crash::install_reporter();
     tauri::Builder::default()
         // Launching Loudr while it is already running shows the window of
         // the running copy. Two copies would both type every dictation.
