@@ -89,7 +89,7 @@ fn float_on_top(window: &tauri::WebviewWindow) {
             msg_send![ns_window, styleMask],
             msg_send![ns_window, alphaValue],
         );
-        log::info!("pill: before (visible, active space, occlusion) {before:?}; after (.., level, behavior, style, alpha) {after:?}");
+        log::debug!("pill: before (visible, active space, occlusion) {before:?}; after (.., level, behavior, style, alpha) {after:?}");
     }
 }
 
