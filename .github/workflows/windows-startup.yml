@@ -12,9 +12,50 @@ on:
       - "src-tauri/**"
       - ".github/workflows/windows-startup.yml"
   workflow_dispatch:
+    inputs:
+      release:
+        description: "Test a published installer instead of this code (tag, e.g. v0.2.0)"
+        required: false
 
 jobs:
+  # Unpack a released .msi and start the app inside it.
+  released:
+    if: ${{ inputs.release }}
+    runs-on: windows-latest
+    steps:
+      - name: Start the released Loudr and see if it stays up
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+          LOUDR_NO_CRASH_DIALOG: "1"
+        run: |
+          gh release download "${{ inputs.release }}" --repo "${{ github.repository }}" --pattern "*.msi" --dir msi
+          $msi = (Get-ChildItem msi\*.msi)[0].FullName
+          $target = Join-Path $pwd "unpacked"
+          Start-Process msiexec -ArgumentList "/a `"$msi`" /qn TARGETDIR=`"$target`"" -Wait
+          $exe = (Get-ChildItem $target -Recurse -Filter loudr.exe)[0].FullName
+          Write-Host "Starting $exe"
+          $logs = Join-Path $env:LOCALAPPDATA "app.loudr.desktop\logs"
+          $app = Start-Process -FilePath $exe -PassThru
+          Start-Sleep -Seconds 25
+          $stopped = $app.HasExited
+          if (Test-Path $logs) {
+            Get-ChildItem $logs | ForEach-Object {
+              Write-Host "===== $($_.Name) ====="
+              Get-Content $_.FullName
+            }
+          }
+          Get-WinEvent -FilterHashtable @{LogName="Application"; Id=1000} -MaxEvents 3 -ErrorAction SilentlyContinue |
+            Where-Object { $_.Message -match "loudr" } | ForEach-Object { Write-Host $_.Message }
+          if ($stopped) {
+            Write-Host "Loudr stopped on its own, exit code $($app.ExitCode)"
+            exit 1
+          }
+          Write-Host "Loudr was still running after 25 seconds"
+          Stop-Process -Id $app.Id -Force
+
   start:
+    if: ${{ !inputs.release }}
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
