@@ -5,10 +5,10 @@
 <h1 align="center">Loudr</h1>
 
 <p align="center">
-  <b>Hold a key. Speak. Release. Your words are typed into any app.</b><br>
-  Free, open-source, fully offline voice typing for macOS and Windows.<br>
-  It also reads text aloud and turns a script into an audio file.<br>
-  An alternative to Wispr Flow that never sends your voice anywhere.
+  <b>Select text and tap a key to hear it. Hold a key and speak to type.</b><br>
+  Free, open-source, fully offline text to speech and voice typing for macOS and Windows.<br>
+  It also turns a script into an MP3.<br>
+  Nothing you select or say leaves your computer.
 </p>
 
 <p align="center">
@@ -30,13 +30,15 @@
 
 ## Why Loudr
 
-- **Offline.** Speech is transcribed on your computer with
-  [whisper.cpp](https://github.com/ggerganov/whisper.cpp). The only network
-  requests Loudr ever makes are the one-time model downloads.
-- **Speaks too.** Select text in any app and tap a key to hear it, or paste
-  a script and save it as an audio file. The voice
-  ([Kokoro](https://huggingface.co/hexgrad/Kokoro-82M)) also runs on your
-  computer.
+- **Reads aloud.** Select text in any app and tap a key to hear it, or paste
+  a script and save it as an MP3. The voice
+  ([Kokoro](https://huggingface.co/hexgrad/Kokoro-82M)) runs on your
+  computer, with nine voices to pick from.
+- **Types what you say.** Hold a key, speak, release, and the text lands in
+  whatever app has focus. Speech is transcribed on your computer with
+  [whisper.cpp](https://github.com/ggerganov/whisper.cpp).
+- **Offline.** The only network requests Loudr ever makes are the one-time
+  model downloads.
 - **Free, with no limits.** No account, no subscription, no word cap, no
   telemetry.
 - **Fast.** The model stays loaded in memory (Metal on Apple Silicon). On an
