@@ -17,9 +17,37 @@ pub fn setup(app: &AppHandle) -> tauri::Result<()> {
     };
     window.set_ignore_cursor_events(true)?;
 
+    #[cfg(target_os = "macos")]
+    if std::env::var("LOUDR_PANEL").as_deref() != Ok("0") {
+        make_panel(&window);
+    }
     float_on_top(&window);
     reposition(app);
     Ok(())
+}
+
+/// Turn the pill into a non-activating panel.
+///
+/// An ordinary window can't be shown in another app's fullscreen Space, no
+/// matter its level; macOS only lets panels (the kind of window used for
+/// Spotlight or the emoji picker) join it. So the window's class is switched
+/// to NSPanel and it is marked as never activating its app.
+#[cfg(target_os = "macos")]
+fn make_panel(window: &tauri::WebviewWindow) {
+    use objc2::msg_send;
+    use objc2::runtime::{AnyClass, AnyObject};
+    const NONACTIVATING_PANEL: usize = 1 << 7;
+    let (Ok(ns_window), Some(panel)) = (window.ns_window(), AnyClass::get(c"NSPanel")) else {
+        return;
+    };
+    let ns_window = ns_window as *mut AnyObject;
+    unsafe {
+        objc2::ffi::object_setClass(ns_window.cast(), (panel as *const AnyClass).cast());
+        let mask: usize = msg_send![ns_window, styleMask];
+        let _: () = msg_send![ns_window, setStyleMask: mask | NONACTIVATING_PANEL];
+        let _: () = msg_send![ns_window, setFloatingPanel: true];
+        let _: () = msg_send![ns_window, setBecomesKeyOnlyIfNeeded: true];
+    }
 }
 
 /// Float above everything, on every Space, including over other apps'
@@ -46,7 +74,22 @@ fn float_on_top(window: &tauri::WebviewWindow) {
         let _: () = msg_send![ns_window, setLevel: POP_UP_MENU_LEVEL];
         let _: () = msg_send![ns_window, setCollectionBehavior: BEHAVIOR];
         let _: () = msg_send![ns_window, setHidesOnDeactivate: false];
+        let before: (bool, bool, usize) = (
+            msg_send![ns_window, isVisible],
+            msg_send![ns_window, isOnActiveSpace],
+            msg_send![ns_window, occlusionState],
+        );
         let _: () = msg_send![ns_window, orderFrontRegardless];
+        let after: (bool, bool, usize, isize, usize, usize, f64) = (
+            msg_send![ns_window, isVisible],
+            msg_send![ns_window, isOnActiveSpace],
+            msg_send![ns_window, occlusionState],
+            msg_send![ns_window, level],
+            msg_send![ns_window, collectionBehavior],
+            msg_send![ns_window, styleMask],
+            msg_send![ns_window, alphaValue],
+        );
+        log::info!("pill: before (visible, active space, occlusion) {before:?}; after (.., level, behavior, style, alpha) {after:?}");
     }
 }
 
