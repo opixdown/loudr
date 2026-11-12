@@ -98,13 +98,13 @@ const SPEAK: Video = {
   lengths: speakVoice,
   whoosh: true,
   scenes: [
-    { id: "intro", scene: Intro, pad: 0.4, sfx: [{ file: "pop", at: 0.02, volume: 0.4 }] },
-    { id: "turn", scene: Turn, pad: 0.4, sfx: [{ file: "pop", at: 0.56, volume: 0.35 }] },
-    { id: "read", scene: ReadAloud, pad: 1.1, sfx: [{ file: "key", at: READ_TAP, volume: 0.7 }] },
+    { id: "intro", scene: Intro, pad: 0.25, sfx: [{ file: "pop", at: 0.02, volume: 0.4 }] },
+    { id: "turn", scene: Turn, pad: 0.25, sfx: [{ file: "pop", at: 0.56, volume: 0.35 }] },
+    { id: "read", scene: ReadAloud, pad: 0.8, sfx: [{ file: "key", at: READ_TAP, volume: 0.7 }] },
     {
       id: "script",
       scene: Script,
-      pad: 0.9,
+      pad: 0.7,
       sfx: [
         { file: "pop", at: 0.1, volume: 0.3 },
         { file: "key", at: SCRIPT_SAVE, volume: 0.6 },
@@ -116,7 +116,7 @@ const SPEAK: Video = {
       scene: (p) => (
         <Offline {...p} title="Runs on your computer." line="Nothing you select is sent anywhere." />
       ),
-      pad: 0.35,
+      pad: 0.25,
     },
     {
       id: "free",
@@ -130,7 +130,7 @@ const SPEAK: Video = {
           ]}
         />
       ),
-      pad: 0.35,
+      pad: 0.25,
     },
     {
       id: "outro",
