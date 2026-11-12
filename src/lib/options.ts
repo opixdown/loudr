@@ -3,6 +3,7 @@
 // A short list of common languages; Whisper supports about 100.
 export const LANGUAGES: [code: string, label: string][] = [
   ["en", "English"],
+  ["hinglish", "Hinglish (Hindi in English letters)"],
   ["auto", "Auto-detect"],
   ["ar", "Arabic"],
   ["zh", "Chinese"],

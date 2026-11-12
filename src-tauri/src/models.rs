@@ -22,9 +22,22 @@ pub const SIZES: &[(&str, &str, u32)] = &[
 
 const BASE_URL: &str = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main";
 
+/// The "language" for Hindi spoken and written in English letters ("kal
+/// meeting hai"). Standard Whisper can't write that, so it has its own
+/// model: Whisper-Hindi2Hinglish-Swift by Oriserve (Apache 2.0), a fine-tune
+/// of Whisper Base, converted to the ggml format and hosted with Loudr's
+/// releases. It comes in one size.
+pub const HINGLISH: &str = "hinglish";
+pub const HINGLISH_MB: u32 = 148;
+const HINGLISH_FILE: &str = "ggml-hinglish-base.bin";
+const HINGLISH_URL: &str = "https://github.com/opixdown/loudr/releases/download/models-v1";
+
 /// English has dedicated, more accurate ".en" models. Every other language
 /// (and auto-detect) uses the multilingual model of the same size.
 pub fn file_name(size: &str, language: &str) -> String {
+    if language == HINGLISH {
+        return HINGLISH_FILE.into();
+    }
     let suffix = if language == "en" { ".en" } else { "" };
     format!("ggml-{size}{suffix}.bin")
 }
@@ -65,7 +78,8 @@ pub fn download(app: &AppHandle, size: &str, language: &str) -> Result<(), Strin
     let app = app.clone();
     let file = file_name(size, language);
     std::thread::spawn(move || {
-        let url = format!("{BASE_URL}/{file}");
+        let base = if file == HINGLISH_FILE { HINGLISH_URL } else { BASE_URL };
+        let url = format!("{base}/{file}");
         let result = fetch(&app, &url, &dir(&app), &file, "model-download");
         app.state::<AppState>()
             .downloading

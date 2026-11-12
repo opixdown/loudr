@@ -206,7 +206,22 @@ pub struct ModelInfo {
 /// The model sizes, and whether each is on disk for the current language.
 #[tauri::command]
 pub fn list_models(app: AppHandle) -> Vec<ModelInfo> {
-    let language = settings::current(&app).language;
+    let settings = settings::current(&app);
+    let language = settings.language;
+    // Hinglish has a single model, shown under whichever size is selected.
+    if language == models::HINGLISH {
+        let id = models::SIZES
+            .iter()
+            .map(|size| size.0)
+            .find(|id| *id == settings.model)
+            .unwrap_or("base");
+        return vec![ModelInfo {
+            id,
+            label: "Hinglish",
+            size_mb: models::HINGLISH_MB,
+            downloaded: models::is_downloaded(&app, id, &language),
+        }];
+    }
     models::SIZES
         .iter()
         .map(|&(id, label, size_mb)| ModelInfo {
