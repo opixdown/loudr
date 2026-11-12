@@ -75,13 +75,13 @@ main { overflow: hidden; }
 .eyebrow i { width: 4px; height: 4px; border-radius: 50%; background: var(--muted); }
 h1 {
   position: relative; margin: 0;
-  font: 400 clamp(54px, 10.5vw, 124px)/0.98 var(--serif);
+  font: 400 clamp(42px, 6.4vw, 76px)/1.02 var(--serif);
   letter-spacing: -0.025em;
 }
 h1 em { color: var(--muted); }
 .lead {
-  position: relative; max-width: 37em; margin: 26px 0 0;
-  color: var(--muted); font-size: clamp(16px, 2vw, 19px);
+  position: relative; max-width: 31em; margin: 18px 0 0;
+  color: var(--muted); font-size: clamp(15px, 1.5vw, 17px);
 }
 
 .downloads { position: relative; display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; margin-top: 38px; }
