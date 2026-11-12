@@ -162,6 +162,14 @@ h2 em { color: var(--muted); }
 .pill.primary:hover { background: #fbfaf8; border-color: #fbfaf8; }
 .pill[hidden] { display: none; }
 
+.thanks {
+  margin-top: clamp(64px, 10vh, 110px) !important;
+  display: flex; flex-direction: column; align-items: center; text-align: center;
+}
+.thanks h2 { margin-top: 0; }
+.thanks p { margin: 0; color: var(--muted); max-width: 30em; }
+.thanks .support-actions { margin-top: 22px; }
+
 /* ---------- Cursor light ---------- */
 /* A wide soft glow that trails the pointer across the whole page. */
 .glow {
@@ -184,7 +192,7 @@ h2 em { color: var(--muted); }
 .button.primary::before { display: none; }
 
 footer {
-  width: min(1080px, 100% - 32px); margin: clamp(72px, 12vh, 130px) auto 0; padding: 26px 0 40px;
+  width: min(1080px, 100% - 32px); margin: clamp(56px, 9vh, 96px) auto 0; padding: 26px 0 40px;
   display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 12px;
   border-top: 1px solid var(--line); color: var(--muted); font-size: 14px;
 }
