@@ -1,15 +1,14 @@
-/* Loudr website: the app's warm charcoal and stone, with a serif headline. */
+/* Loudr website: black, with the app's stone as the one light colour. */
 :root {
-  --bg: #0f0e0d;
-  --raised: #181715;
-  --line: #2b2925;
-  --line-strong: #45423c;
+  --bg: #000000;
+  --raised: #0c0c0c;
+  --line: #222120;
+  --line-strong: #3a3836;
   --text: #f2f0ec;
   --muted: #a39d93;
   --stone: #e9e6e0;
   --ink: #1a1917;
-  --serif: "Instrument Serif", "Iowan Old Style", Georgia, serif;
-  --sans: "Inter", -apple-system, "Segoe UI", system-ui, sans-serif;
+  --sans: "Geist", -apple-system, "Segoe UI", system-ui, sans-serif;
   color-scheme: dark;
 }
 
@@ -23,7 +22,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 a { color: inherit; }
-em { font-style: italic; }
+em { font-style: normal; }
 main { overflow: hidden; }
 
 /* ---------- Top bar ---------- */
@@ -53,13 +52,6 @@ main { overflow: hidden; }
   display: flex; flex-direction: column; align-items: center; text-align: center;
   padding: clamp(56px, 10vh, 112px) 16px clamp(120px, 18vh, 190px);
 }
-/* A soft light behind the logo, as if the tile were lit from above. */
-.hero::before {
-  content: ""; position: absolute; top: -140px; left: 50%;
-  width: min(900px, 130vw); height: 620px; transform: translateX(-50%);
-  background: radial-gradient(closest-side, rgba(233, 230, 224, 0.13), transparent);
-  pointer-events: none;
-}
 .logo { position: relative; margin-bottom: 30px; }
 .logo img {
   display: block;
@@ -75,8 +67,8 @@ main { overflow: hidden; }
 .eyebrow i { width: 4px; height: 4px; border-radius: 50%; background: var(--muted); }
 h1 {
   position: relative; margin: 0;
-  font: 400 clamp(42px, 6.4vw, 76px)/1.02 var(--serif);
-  letter-spacing: -0.025em;
+  font: 600 clamp(38px, 5.6vw, 68px)/1.05 var(--sans);
+  letter-spacing: -0.045em;
 }
 h1 em { color: var(--muted); }
 .lead {
@@ -154,7 +146,7 @@ section:not(.hero) { width: min(1080px, 100% - 32px); margin: 0 auto; }
 }
 .steam { animation: steam 2.8s ease-in-out infinite; }
 @keyframes steam { 0%, 100% { opacity: 0.25; transform: translateY(1px); } 50% { opacity: 1; transform: translateY(-1px); } }
-h2 { margin: 20px 0 12px; font: 400 clamp(34px, 4.6vw, 52px)/1.05 var(--serif); letter-spacing: -0.015em; }
+h2 { margin: 20px 0 12px; font: 600 clamp(28px, 3.6vw, 40px)/1.1 var(--sans); letter-spacing: -0.04em; }
 h2 em { color: var(--muted); }
 .support p { margin: 0; color: var(--muted); max-width: 30em; }
 .support-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 28px; }
