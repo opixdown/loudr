@@ -12,6 +12,7 @@
 </p>
 
 <p align="center">
+  <a href="https://loudr-sigma.vercel.app"><b>Website</b></a> ·
   <a href="https://github.com/opixdown/loudr/releases/latest"><b>Download</b></a> ·
   <a href="#build-from-source">Build from source</a> ·
   <a href="#contributing">Contribute</a>
@@ -200,6 +201,8 @@ hotkey up   -> close microphone -> resample to 16 kHz mono
 | `src-tauri/src/settings.rs`   | Settings file                                  |
 | `src-tauri/src/tray.rs`       | Tray icon and menu                             |
 | `src/windows/`                | React UI: pill, first-run flow, settings       |
+| `site/`                       | The website (static HTML, hosted on Vercel)    |
+| `video/`                      | The promo videos (Remotion)                    |
 
 ## Not in v1
 

@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Loudr · Free offline voice typing and text to speech</title>
+    <meta
+      name="description"
+      content="Hold a key, speak, release: your words are typed into any app. Select text and tap a key to hear it. Free, open source, fully offline. For macOS and Windows."
+    />
+    <meta property="og:title" content="Loudr · Free offline voice typing and text to speech" />
+    <meta
+      property="og:description"
+      content="Hold a key, speak, release. Free, open source and fully offline, for macOS and Windows."
+    />
+    <meta property="og:image" content="media/icon.png" />
+    <meta name="theme-color" content="#0f0e0d" />
+    <link rel="icon" type="image/png" href="media/favicon.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Inter:wght@400;500;600&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <body>
+    <header class="nav">
+      <a class="brand" href="#top" aria-label="Loudr">
+        <img src="media/icon.png" alt="" width="28" height="28" />
+        <span>Loudr</span>
+      </a>
+      <a class="nav-link" href="https://github.com/opixdown/loudr" target="_blank" rel="noopener">
+        <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+          <path
+            fill="currentColor"
+            d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.17.55-.38v-1.33c-2.23.48-2.7-1.07-2.7-1.07-.36-.93-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.8.06 1.23.83 1.23.83.72 1.22 1.88.87 2.33.66.07-.52.28-.87.5-1.07-1.77-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 4 0c1.53-1.03 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.28.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.19c0 .21.15.46.55.38A8 8 0 0 0 8 0Z"
+          />
+        </svg>
+        GitHub
+        <span class="stars" id="stars" hidden></span>
+      </a>
+    </header>
+
+    <main id="top">
+      <section class="hero">
+        <div class="logo">
+          <img src="media/icon.png" alt="Loudr icon" width="132" height="132" />
+        </div>
+        <h1>Say it. <em>It's typed.</em></h1>
+        <p class="lead">
+          Hold a key, speak, release, and your words land in any app. Select text and tap a key to
+          hear it read back. Free, open source and fully offline.
+        </p>
+
+        <div class="downloads">
+          <a
+            class="button"
+            id="download-mac"
+            data-os="mac"
+            href="https://github.com/opixdown/loudr/releases/latest"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+              <path
+                fill="currentColor"
+                d="M16.37 12.6c-.02-2.3 1.88-3.4 1.96-3.46-1.07-1.56-2.73-1.77-3.32-1.8-1.41-.14-2.76.83-3.48.83-.72 0-1.83-.81-3-.79-1.55.02-2.97.9-3.77 2.28-1.6 2.79-.41 6.91 1.16 9.17.76 1.1 1.67 2.34 2.86 2.3 1.15-.05 1.58-.74 2.97-.74 1.38 0 1.78.74 2.99.72 1.24-.02 2.02-1.12 2.77-2.23.87-1.28 1.23-2.52 1.25-2.58-.03-.01-2.4-.92-2.42-3.65ZM14.1 5.86c.63-.77 1.06-1.83.94-2.89-.91.04-2.01.61-2.66 1.37-.59.68-1.1 1.76-.96 2.8 1.01.08 2.05-.52 2.68-1.28Z"
+              />
+            </svg>
+            <span class="button-text">
+              <strong>Download for Mac</strong>
+              <small id="meta-mac">Apple Silicon · macOS</small>
+            </span>
+          </a>
+          <a
+            class="button"
+            id="download-win"
+            data-os="win"
+            href="https://github.com/opixdown/loudr/releases/latest"
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+              <path fill="currentColor" d="M3 3h8.5v8.5H3V3Zm9.5 0H21v8.5h-8.500V3ZM3 12.500h8.500V21H3v-8.500Zm9.500 0H21V21h-8.500v-8.500Z" />
+            </svg>
+            <span class="button-text">
+              <strong>Download for Windows</strong>
+              <small id="meta-win">Windows 10 and 11 · 64-bit</small>
+            </span>
+          </a>
+        </div>
+        <p class="fine">
+          Free forever. No account.
+          <a href="https://github.com/opixdown/loudr" target="_blank" rel="noopener">Source on GitHub</a>
+        </p>
+
+        <div class="wave" aria-hidden="true">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+      </section>
+
+      <section class="film">
+        <video
+          controls
+          playsinline
+          preload="metadata"
+          poster="media/poster.jpg"
+          src="media/loudr-speak.mp4"
+        ></video>
+        <p class="caption">The voice in this video is Loudr's own, made on a laptop with no internet.</p>
+      </section>
+
+      <section class="pair">
+        <article>
+          <span class="tag">Voice typing</span>
+          <h2>Hold. Speak. <em>Release.</em></h2>
+          <p>
+            Hold Right Option (Right Alt on Windows) and talk. When you let go, the text is typed
+            wherever your cursor is: an editor, a chat, a browser, a terminal.
+          </p>
+        </article>
+        <article>
+          <span class="tag">Text to speech</span>
+          <h2>Select. Tap. <em>Listen.</em></h2>
+          <p>
+            Select text in any app and tap one key to hear it. Or paste a script, pick one of nine
+            voices, and save it as an MP3.
+          </p>
+        </article>
+      </section>
+
+      <section class="facts">
+        <div>
+          <strong>0</strong>
+          <span>words sent to a server. Speech models run on your computer.</span>
+        </div>
+        <div>
+          <strong>0.4s</strong>
+          <span>to type out a five-second clip, measured on an Apple Silicon Mac.</span>
+        </div>
+        <div>
+          <strong>$0</strong>
+          <span>No subscription, no word limit, no account to create.</span>
+        </div>
+        <div>
+          <strong>MIT</strong>
+          <span>Open source. Read it, fork it, add the feature you want.</span>
+        </div>
+      </section>
+
+      <section class="notes">
+        <h2>Good to know</h2>
+        <details>
+          <summary>The first time you open it</summary>
+          <p>
+            Loudr isn't signed with a paid developer certificate yet, so your system will warn you
+            once.
+          </p>
+          <p>
+            <b>Mac:</b> right-click Loudr in Applications and choose Open. If macOS says the app is
+            damaged, run <code>xattr -cr /Applications/Loudr.app</code> in Terminal and open it
+            again.
+          </p>
+          <p><b>Windows:</b> in the SmartScreen box choose More info, then Run anyway.</p>
+        </details>
+        <details>
+          <summary>What it downloads</summary>
+          <p>
+            The installer is about 21 MB. On first run Loudr downloads a speech-recognition model
+            (142 MB by default). Text to speech is optional and needs a 205 MB voice. After that it
+            never goes online.
+          </p>
+        </details>
+        <details>
+          <summary>What it needs</summary>
+          <p>
+            A Mac with Apple Silicon, or a 64-bit PC with Windows 10 or 11. On a Mac it asks for
+            Microphone and Accessibility access, to hear you and to type for you. The Windows
+            version is new and less tested; please report anything odd on GitHub.
+          </p>
+        </details>
+      </section>
+    </main>
+
+    <footer>
+      <span>Loudr · MIT licence</span>
+      <nav>
+        <a href="https://github.com/opixdown/loudr" target="_blank" rel="noopener">GitHub</a>
+        <a href="https://github.com/opixdown/loudr/releases" target="_blank" rel="noopener">All releases</a>
+        <a href="https://github.com/opixdown/loudr/issues" target="_blank" rel="noopener">Report a problem</a>
+      </nav>
+    </footer>
+
+    <script src="script.js"></script>
+  </body>
+</html>
