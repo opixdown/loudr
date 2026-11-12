@@ -11,6 +11,12 @@ use tauri::{AppHandle, Manager};
 pub struct Settings {
     /// Hold-to-talk key, as this platform's key code (see `hotkey`).
     pub hotkey_code: u32,
+    /// Read-aloud key, as this platform's key code.
+    pub speak_key: u32,
+    /// Text-to-speech voice id (see `tts::VOICES`).
+    pub voice: String,
+    /// Speaking rate; 1.0 is normal.
+    pub voice_speed: f32,
     /// "system", "light" or "dark".
     pub theme: String,
     /// Model size: tiny, base, small or medium.
@@ -28,6 +34,9 @@ impl Default for Settings {
     fn default() -> Self {
         Self {
             hotkey_code: crate::hotkey::DEFAULT_KEY,
+            speak_key: crate::hotkey::DEFAULT_SPEAK_KEY,
+            voice: crate::tts::DEFAULT_VOICE.into(),
+            voice_speed: 1.0,
             theme: "system".into(),
             model: "base".into(),
             language: "en".into(),
@@ -41,7 +50,7 @@ impl Default for Settings {
 /// Shared app state, managed by Tauri.
 pub struct AppState {
     pub settings: Mutex<Settings>,
-    /// True while a model download is running (only one at a time).
+    /// True while a model or voice download is running (only one at a time).
     pub downloading: AtomicBool,
 }
 

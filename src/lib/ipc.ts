@@ -4,6 +4,9 @@ import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 
 export type Settings = {
   hotkey_code: number;
+  speak_key: number;
+  voice: string;
+  voice_speed: number;
   theme: "system" | "light" | "dark";
   model: string;
   language: string;
@@ -15,6 +18,10 @@ export type Settings = {
 export type SetupState = {
   /** Name of the hold-to-talk key, e.g. "Right Option". */
   hotkey_label: string;
+  /** Name of the read-aloud key. */
+  speak_label: string;
+  /** The text-to-speech voice is downloaded. */
+  voice_ready: boolean;
   platform: "macos" | "windows" | string;
   onboarded: boolean;
   microphone: "granted" | "denied" | "unknown";
@@ -38,8 +45,23 @@ export type DownloadProgress = {
   error: string | null;
 };
 
+export type Voices = {
+  voices: { id: string; label: string }[];
+  download_mb: number;
+};
+
+/** What the speech worker is doing. */
+export type SpeechEvent = {
+  state: "idle" | "preparing" | "speaking" | "exporting";
+  /** 0 to 1 while exporting. */
+  progress: number;
+  error?: string | null;
+  /** Path of the audio file an export just wrote. */
+  saved?: string | null;
+};
+
 export type Status =
-  | { state: "idle" | "recording" | "transcribing" }
+  | { state: "idle" | "recording" | "transcribing" | "preparing" | "speaking" }
   | { state: "error"; message: string };
 
 export const api = {
@@ -54,8 +76,14 @@ export const api = {
   listModels: () => invoke<ModelInfo[]>("list_models"),
   downloadModel: () => invoke<void>("download_model"),
   finishOnboarding: () => invoke<void>("finish_onboarding"),
-  startHotkeyCapture: () => invoke<void>("start_hotkey_capture"),
+  startHotkeyCapture: (target: "hold" | "speak") =>
+    invoke<void>("start_hotkey_capture", { target }),
   cancelHotkeyCapture: () => invoke<void>("cancel_hotkey_capture"),
+  listVoices: () => invoke<Voices>("list_voices"),
+  downloadVoice: () => invoke<void>("download_voice"),
+  speakText: (text: string) => invoke<void>("speak_text", { text }),
+  stopSpeaking: () => invoke<void>("stop_speaking"),
+  exportSpeech: (text: string) => invoke<void>("export_speech", { text }),
 };
 
 /** Subscribe to a backend event; returns a cleanup function for useEffect. */

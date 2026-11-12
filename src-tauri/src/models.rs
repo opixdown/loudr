@@ -1,12 +1,13 @@
 //! Whisper model files: where they live and how they are downloaded.
 //!
-//! Downloading a model is the only time Loudr touches the network.
+//! Downloading a model (this one, or the optional voice for text to speech)
+//! is the only time Loudr touches the network.
 
 use crate::pipeline::{self, Command};
 use crate::settings::{self, AppState};
 use serde::Serialize;
 use std::io::{Read, Write};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::sync::atomic::Ordering;
 use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter, Manager};
@@ -64,7 +65,8 @@ pub fn download(app: &AppHandle, size: &str, language: &str) -> Result<(), Strin
     let app = app.clone();
     let file = file_name(size, language);
     std::thread::spawn(move || {
-        let result = fetch(&app, &file);
+        let url = format!("{BASE_URL}/{file}");
+        let result = fetch(&app, &url, &dir(&app), &file, "model-download");
         app.state::<AppState>()
             .downloading
             .store(false, Ordering::SeqCst);
@@ -75,27 +77,32 @@ pub fn download(app: &AppHandle, size: &str, language: &str) -> Result<(), Strin
             log::info!("model downloaded: {file}");
             pipeline::send(&app, Command::ReloadModel);
         }
-        let _ = app.emit(
-            "model-download",
-            Progress {
-                file,
-                downloaded: 0,
-                total: 0,
-                done: result.is_ok(),
-                error: result.err(),
-            },
-        );
+        emit_finished(&app, "model-download", &file, result);
     });
     Ok(())
 }
 
-fn fetch(app: &AppHandle, file: &str) -> Result<(), String> {
-    let dir = dir(app);
-    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
+/// Tell the window a download ended, successfully or not.
+pub fn emit_finished(app: &AppHandle, event: &str, file: &str, result: Result<(), String>) {
+    let _ = app.emit(
+        event,
+        Progress {
+            file: file.to_string(),
+            downloaded: 0,
+            total: 0,
+            done: result.is_ok(),
+            error: result.err(),
+        },
+    );
+}
+
+/// Download `url` to `dir/file`, reporting progress as `event` events.
+pub fn fetch(app: &AppHandle, url: &str, dir: &Path, file: &str, event: &str) -> Result<(), String> {
+    std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
     // Download to a temporary name so a half-finished file is never loaded.
     let partial = dir.join(format!("{file}.part"));
 
-    let mut response = ureq::get(format!("{BASE_URL}/{file}"))
+    let mut response = ureq::get(url)
         .call()
         .map_err(|e| format!("Download failed: {e}"))?;
     let total = response.body().content_length().unwrap_or(0);
@@ -118,7 +125,7 @@ fn fetch(app: &AppHandle, file: &str) -> Result<(), String> {
         if last_event.elapsed() > Duration::from_millis(100) {
             last_event = Instant::now();
             let _ = app.emit(
-                "model-download",
+                event,
                 Progress {
                     file: file.to_string(),
                     downloaded,

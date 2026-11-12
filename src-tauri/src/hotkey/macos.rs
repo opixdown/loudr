@@ -1,12 +1,14 @@
 //! macOS: a CGEventTap on the keyboard.
 //!
 //! Modifier keys arrive as "flags changed" events, and a listen-only tap is
-//! enough for them, so with a modifier hold key (the default) Loudr only ever
-//! observes modifier changes. A function-key hold key, or capturing a new
-//! key, needs an active tap that also sees (and swallows) key presses. The
-//! tap is rebuilt whenever that requirement changes.
+//! enough for them, so with modifier keys (the default) Loudr only observes:
+//! it sees modifier changes, plus the fact that some other key went down, to
+//! tell a lone tap of the read-aloud key from a shortcut that uses it. A
+//! function-key hotkey, or capturing a new key, needs an active tap that
+//! can also swallow key presses. The tap is rebuilt whenever that
+//! requirement changes.
 
-use super::{bound_key, capturing, CaptureResult, HotkeyEvent};
+use super::{bound_key, capturing, speak_key, CaptureResult, HotkeyEvent, TAP_MAX};
 use crate::permissions;
 use core_foundation::runloop::{kCFRunLoopCommonModes, CFRunLoop};
 use core_graphics::event::{
@@ -17,9 +19,10 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
     Arc, Mutex,
 };
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 pub const DEFAULT_KEY: u32 = 61; // Right Option
+pub const DEFAULT_SPEAK_KEY: u32 = 54; // Right Command
 const KEY_ESCAPE: u32 = 53;
 
 /// Modifier keys: (key code, name, flag bit). The flag is the device-specific
@@ -86,12 +89,19 @@ pub fn run(
     let on_event = Arc::new(on_event);
     let on_capture = Arc::new(on_capture);
     let held = Arc::new(AtomicBool::new(false));
+    let speak_held = Arc::new(AtomicBool::new(false));
+    // When a modifier read-aloud key went down, until something else is
+    // pressed (which makes it a shortcut, not a tap).
+    let speak_tap: Arc<Mutex<Option<Instant>>> = Arc::new(Mutex::new(None));
     *RUN_LOOP.lock().unwrap() = Some(CFRunLoop::get_current());
 
     // Each pass builds one tap and runs until `refresh()` is called or macOS
     // disables the tap (which it does if a tap ever stalls).
     loop {
-        let needs_key_events = capturing() || modifier_flag(bound_key()).is_none();
+        let is_function_key = |code: u32| modifier_flag(code).is_none();
+        let needs_key_events = capturing()
+            || is_function_key(bound_key())
+            || speak_key().is_some_and(is_function_key);
         let (options, events) = if needs_key_events {
             (
                 CGEventTapOptions::Default,
@@ -102,10 +112,14 @@ pub fn run(
                 ],
             )
         } else {
-            (CGEventTapOptions::ListenOnly, vec![CGEventType::FlagsChanged])
+            (
+                CGEventTapOptions::ListenOnly,
+                vec![CGEventType::FlagsChanged, CGEventType::KeyDown],
+            )
         };
 
         let (event_cb, capture_cb, held_cb) = (on_event.clone(), on_capture.clone(), held.clone());
+        let (speak_held_cb, speak_tap_cb) = (speak_held.clone(), speak_tap.clone());
         let tap = CGEventTap::new(
             CGEventTapLocation::Session,
             CGEventTapPlacement::HeadInsertEventTap,
@@ -141,6 +155,33 @@ pub fn run(
                     }
                     // Keep the keys pressed during capture out of other apps.
                     return if is_key_event { CallbackResult::Drop } else { CallbackResult::Keep };
+                }
+
+                if Some(code) == speak_key() {
+                    if let Some(down) = down {
+                        if is_key_event {
+                            // Function key: fires when pressed, and is kept
+                            // away from other apps.
+                            if speak_held_cb.swap(down, Ordering::SeqCst) != down && down {
+                                event_cb(HotkeyEvent::Speak);
+                            }
+                            return CallbackResult::Drop;
+                        }
+                        // Modifier key: fires when released after a short
+                        // press with nothing else pressed in between.
+                        let mut tap = speak_tap_cb.lock().unwrap();
+                        if down {
+                            *tap = Some(Instant::now());
+                        } else if tap.take().is_some_and(|at| at.elapsed() < TAP_MAX) {
+                            event_cb(HotkeyEvent::Speak);
+                        }
+                    }
+                    return CallbackResult::Keep;
+                }
+                if down == Some(true) {
+                    // Any other key going down turns a held read-aloud key
+                    // into part of a shortcut.
+                    speak_tap_cb.lock().unwrap().take();
                 }
 
                 if code == bound_key() {

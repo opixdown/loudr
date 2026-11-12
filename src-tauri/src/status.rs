@@ -10,6 +10,10 @@ pub enum Status {
     Idle,
     Recording,
     Transcribing,
+    /// Getting ready to read aloud (loading the voice, making the first words).
+    Preparing,
+    /// Reading aloud.
+    Speaking,
     Error(String),
 }
 

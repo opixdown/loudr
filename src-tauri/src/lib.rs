@@ -10,6 +10,7 @@ mod settings;
 mod status;
 mod transcribe;
 mod tray;
+mod tts;
 
 use settings::AppState;
 use std::sync::atomic::AtomicBool;
@@ -49,6 +50,11 @@ pub fn run() {
             commands::finish_onboarding,
             commands::start_hotkey_capture,
             commands::cancel_hotkey_capture,
+            commands::list_voices,
+            commands::download_voice,
+            commands::speak_text,
+            commands::stop_speaking,
+            commands::export_speech,
         ])
         .setup(|app| {
             // Menu bar app: no Dock icon, no app switcher entry.
@@ -58,6 +64,7 @@ pub fn run() {
             let handle = app.handle();
             let loaded = settings::load(handle);
             hotkey::set_key(loaded.hotkey_code);
+            hotkey::set_speak_key(loaded.speak_key);
             commands::apply_theme(handle, &loaded.theme);
             app.manage(AppState {
                 settings: Mutex::new(loaded),
@@ -67,16 +74,18 @@ pub fn run() {
             tray::create(handle)?;
             pill::setup(handle)?;
             pipeline::spawn(handle);
+            tts::spawn(handle);
 
             // The hotkey listener only forwards events; all the work happens
-            // on the pipeline thread.
+            // on the pipeline and speech threads.
             let (pipeline_handle, capture_handle) = (handle.clone(), handle.clone());
             hotkey::start(
-                move |event| {
-                    pipeline::send(
+                move |event| match event {
+                    hotkey::HotkeyEvent::Speak => tts::toggle_selection(&pipeline_handle),
+                    _ => pipeline::send(
                         &pipeline_handle,
                         pipeline::Command::Hotkey(event, Instant::now()),
-                    );
+                    ),
                 },
                 move |result| {
                     // Saving settings touches the disk; keep that off the

@@ -31,6 +31,8 @@ whisper-rs = { version = "0.16.0", features = ["log_backend"] }
 ureq = "3.5.1"
 tauri-plugin-autostart = "2.7.0"
 tauri-plugin-single-instance = "2.5.5"
+ort = "=2.0.0-rc.15"
+misaki-rs = { version = "0.8", default-features = false }
 
 [target.'cfg(target_os = "macos")'.dependencies]
 core-graphics = "0.25"

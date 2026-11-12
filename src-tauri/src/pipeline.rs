@@ -45,6 +45,8 @@ pub fn spawn(app: &AppHandle) {
             for command in rx {
                 match command {
                     Command::Hotkey(HotkeyEvent::Pressed, _) => {
+                        // Don't record Loudr's own voice.
+                        crate::tts::stop(&app);
                         match start_recording(&app, transcriber.is_some()) {
                             Ok(r) => {
                                 recording = Some(r);
@@ -63,6 +65,8 @@ pub fn spawn(app: &AppHandle) {
                             Err(e) => status::set(&app, Status::Error(e)),
                         }
                     }
+                    // The read-aloud key is handled by the speech worker.
+                    Command::Hotkey(HotkeyEvent::Speak, _) => {}
                     Command::ReloadModel => {
                         drop(transcriber.take()); // free the old model first
                         transcriber = load_model(&app);

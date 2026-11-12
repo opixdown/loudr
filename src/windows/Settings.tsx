@@ -4,10 +4,16 @@ import { api, on, type Settings as SettingsType, type SetupState } from "../lib/
 import { useModels } from "../lib/hooks";
 import { LANGUAGES, THEMES } from "../lib/options";
 import { AccessibilityRow, DownloadBar, MicrophoneRow, ModelSelect } from "./Setup";
+import Speech from "./Speech";
+
+type Tab = "dictation" | "speech";
 
 export default function Settings({ setup }: { setup: SetupState }) {
   const [settings, setSettings] = useState<SettingsType | null>(null);
   const [devices, setDevices] = useState<string[]>([]);
+  const [tab, setTab] = useState<Tab>("dictation");
+  // The tray menu and the read-aloud key can ask for a particular tab.
+  useEffect(() => on<Tab>("navigate", setTab), []);
   const { models, progress } = useModels(
     `${settings?.model}:${settings?.language}:${setup.model_ready}`,
   );
@@ -34,6 +40,20 @@ export default function Settings({ setup }: { setup: SetupState }) {
     <main>
       <h1>Loudr</h1>
 
+      <div className="tabs" role="tablist">
+        {(["dictation", "speech"] as const).map((id) => (
+          <button
+            key={id}
+            role="tab"
+            aria-selected={tab === id}
+            className={tab === id ? "selected" : undefined}
+            onClick={() => setTab(id)}
+          >
+            {id === "dictation" ? "Dictation" : "Text to speech"}
+          </button>
+        ))}
+      </div>
+
       {permissionsMissing && (
         <section className="warning">
           <MicrophoneRow setup={setup} />
@@ -41,8 +61,16 @@ export default function Settings({ setup }: { setup: SetupState }) {
         </section>
       )}
 
+      {tab === "speech" ? (
+        <Speech setup={setup} settings={settings} update={update} />
+      ) : (
       <section>
-        <HoldKeyRow label={setup.hotkey_label} />
+        <KeyRow
+          target="hold"
+          title="Hold to talk"
+          hint="Hold this key, speak, then release."
+          label={setup.hotkey_label}
+        />
 
         <label>
           <span>Model</span>
@@ -112,37 +140,48 @@ export default function Settings({ setup }: { setup: SetupState }) {
           />
         </label>
       </section>
+      )}
 
       <p className="hint">Loudr works offline. Audio and text never leave this computer.</p>
     </main>
   );
 }
 
-/** Shows the hold-to-talk key and lets the user record a different one. */
-function HoldKeyRow({ label }: { label: string }) {
+/** Shows one of the two global keys and lets the user record a different one. */
+export function KeyRow({
+  target,
+  title,
+  hint,
+  label,
+}: {
+  target: "hold" | "speak";
+  title: string;
+  hint: string;
+  label: string;
+}) {
   const [capturing, setCapturing] = useState(false);
   const [rejected, setRejected] = useState(false);
 
-  useEffect(
-    () =>
-      on<"captured" | "cancelled" | "unsupported">("hotkey-capture", (outcome) => {
-        // An unusable key keeps the capture going; anything else ends it.
-        setRejected(outcome === "unsupported");
-        if (outcome !== "unsupported") setCapturing(false);
-      }),
-    [],
-  );
+  useEffect(() => {
+    // Both key rows hear this event; only the one that is recording reacts.
+    if (!capturing) return;
+    return on<"captured" | "cancelled" | "unsupported">("hotkey-capture", (outcome) => {
+      // An unusable key keeps the capture going; anything else ends it.
+      setRejected(outcome === "unsupported");
+      if (outcome !== "unsupported") setCapturing(false);
+    });
+  }, [capturing]);
 
   return (
     <div className="row hold-key">
       <div className="row-text">
-        <strong>Hold to talk</strong>
+        <strong>{title}</strong>
         <span className={rejected ? "error" : undefined}>
           {!capturing
-            ? "Hold this key, speak, then release."
+            ? hint
             : rejected
-              ? "That key can't be used. Press a modifier key (Option, Command, Control, Shift, Fn) or a function key."
-              : "Press the key you want to hold. Esc cancels."}
+              ? "That key can't be used. Press a modifier key (Option, Command, Control, Shift) or a function key that isn't already taken."
+              : "Press the key you want to use. Esc cancels."}
         </span>
       </div>
       {capturing ? (
@@ -160,8 +199,9 @@ function HoldKeyRow({ label }: { label: string }) {
           <kbd>{label}</kbd>
           <button
             onClick={() => {
+              setRejected(false);
               setCapturing(true);
-              api.startHotkeyCapture();
+              api.startHotkeyCapture(target);
             }}
           >
             Change

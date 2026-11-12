@@ -4,9 +4,10 @@
 //! apps never see it. Otherwise tapping Right Alt would focus the menu bar of
 //! the app being typed into.
 
-use super::{bound_key, capturing, CaptureResult, HotkeyEvent};
+use super::{bound_key, capturing, speak_key, CaptureResult, HotkeyEvent, TAP_MAX};
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::OnceLock;
+use std::sync::{Mutex, OnceLock};
+use std::time::Instant;
 use windows_sys::Win32::Foundation::{LPARAM, LRESULT, WPARAM};
 use windows_sys::Win32::UI::WindowsAndMessaging::{
     CallNextHookEx, GetMessageW, SetWindowsHookExW, KBDLLHOOKSTRUCT, MSG, WH_KEYBOARD_LL,
@@ -14,6 +15,7 @@ use windows_sys::Win32::UI::WindowsAndMessaging::{
 };
 
 pub const DEFAULT_KEY: u32 = 0xA5; // VK_RMENU, Right Alt
+pub const DEFAULT_SPEAK_KEY: u32 = 0xA3; // VK_RCONTROL, Right Ctrl
 const KEY_ESCAPE: u32 = 0x1B;
 
 /// Modifier keys: (virtual-key code, name).
@@ -52,6 +54,10 @@ type Handler<T> = OnceLock<Box<dyn Fn(T) + Send + Sync>>;
 static ON_EVENT: Handler<HotkeyEvent> = OnceLock::new();
 static ON_CAPTURE: Handler<CaptureResult> = OnceLock::new();
 static HELD: AtomicBool = AtomicBool::new(false);
+static SPEAK_HELD: AtomicBool = AtomicBool::new(false);
+/// When a modifier read-aloud key went down, until another key is pressed
+/// (which makes it a shortcut, not a tap).
+static SPEAK_TAP: Mutex<Option<Instant>> = Mutex::new(None);
 
 pub fn run(
     on_event: impl Fn(HotkeyEvent) + Send + Sync + 'static,
@@ -93,6 +99,33 @@ unsafe extern "system" fn hook_proc(code: i32, wparam: WPARAM, lparam: LPARAM) -
                 });
             }
             return 1; // keep keys pressed during capture out of other apps
+        }
+
+        if Some(key) == speak_key() {
+            if let (Some(down), Some(on_event)) = (down, ON_EVENT.get()) {
+                // Holding a key sends repeated key-downs; only act on a change.
+                let changed = SPEAK_HELD.swap(down, Ordering::SeqCst) != down;
+                if FUNCTION_KEYS.contains(&key) {
+                    // Function key: fires when pressed, and is swallowed.
+                    if changed && down {
+                        on_event(HotkeyEvent::Speak);
+                    }
+                    return 1;
+                }
+                // Modifier key: fires when released after a short press
+                // with nothing else pressed in between. It still reaches
+                // other apps, so shortcuts that use it keep working.
+                if changed {
+                    let mut tap = SPEAK_TAP.lock().unwrap();
+                    if down {
+                        *tap = Some(Instant::now());
+                    } else if tap.take().is_some_and(|at| at.elapsed() < TAP_MAX) {
+                        on_event(HotkeyEvent::Speak);
+                    }
+                }
+            }
+        } else if down == Some(true) {
+            SPEAK_TAP.lock().unwrap().take();
         }
 
         if key == bound_key() {

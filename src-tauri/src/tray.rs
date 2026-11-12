@@ -1,11 +1,11 @@
-//! Tray / menu bar icon: Settings, Model picker, Quit.
+//! Tray / menu bar icon: Settings, Text to Speech, Model picker, Quit.
 
 use crate::commands::apply_settings;
 use crate::{models, settings};
 use tauri::{
     menu::{CheckMenuItem, IsMenuItem, Menu, MenuItem, PredefinedMenuItem, Submenu},
     tray::TrayIconBuilder,
-    AppHandle, Manager, Wry,
+    AppHandle, Emitter, Manager, Wry,
 };
 
 /// The model picker's menu items, kept so their ticks can be updated when
@@ -14,6 +14,7 @@ struct ModelItems(Vec<CheckMenuItem<Wry>>);
 
 pub fn create(app: &AppHandle) -> tauri::Result<()> {
     let settings_item = MenuItem::with_id(app, "settings", "Settings…", true, None::<&str>)?;
+    let speech_item = MenuItem::with_id(app, "speech", "Text to Speech…", true, None::<&str>)?;
     let quit = MenuItem::with_id(app, "quit", "Quit Loudr", true, None::<&str>)?;
 
     let current = settings::current(app).model;
@@ -38,6 +39,7 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
         app,
         &[
             &settings_item,
+            &speech_item,
             &model_menu,
             &PredefinedMenuItem::separator(app)?,
             &quit,
@@ -58,7 +60,14 @@ pub fn create(app: &AppHandle) -> tauri::Result<()> {
         .menu(&menu)
         .show_menu_on_left_click(true)
         .on_menu_event(|app, event| match event.id().as_ref() {
-            "settings" => show_settings(app),
+            "settings" => {
+                show_settings(app);
+                let _ = app.emit("navigate", "dictation");
+            }
+            "speech" => {
+                show_settings(app);
+                let _ = app.emit("navigate", "speech");
+            }
             "quit" => app.exit(0),
             id => {
                 if let Some(model) = id.strip_prefix("model:") {

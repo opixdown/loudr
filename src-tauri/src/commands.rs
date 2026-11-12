@@ -2,7 +2,7 @@
 
 use crate::pipeline::{self, Command};
 use crate::settings::{self, AppState, Settings};
-use crate::{audio, hotkey, models, permissions, tray};
+use crate::{audio, hotkey, models, permissions, tray, tts};
 use serde::Serialize;
 use tauri::{AppHandle, Emitter, Manager};
 use tauri_plugin_autostart::ManagerExt;
@@ -31,6 +31,9 @@ pub fn apply_settings(app: &AppHandle, new: Settings) {
     settings::save(app, &new);
     if old.hotkey_code != new.hotkey_code {
         hotkey::set_key(new.hotkey_code);
+    }
+    if old.speak_key != new.speak_key {
+        hotkey::set_speak_key(new.speak_key);
     }
     if old.theme != new.theme {
         apply_theme(app, &new.theme);
@@ -77,11 +80,15 @@ pub fn apply_theme(app: &AppHandle, theme: &str) {
     }
 }
 
-/// Wait for the user to press the key they want as the hold key. The result
-/// arrives as a "hotkey-capture" event.
+/// Wait for the user to press the key they want as the hold key ("hold") or
+/// the read-aloud key ("speak"). The result arrives as a "hotkey-capture"
+/// event.
 #[tauri::command]
-pub fn start_hotkey_capture() {
-    hotkey::start_capture();
+pub fn start_hotkey_capture(target: String) {
+    hotkey::start_capture(match target.as_str() {
+        "speak" => hotkey::CaptureTarget::Speak,
+        _ => hotkey::CaptureTarget::Hold,
+    });
 }
 
 #[tauri::command]
@@ -94,9 +101,20 @@ pub fn on_hotkey_capture(app: &AppHandle, result: hotkey::CaptureResult) {
     use hotkey::CaptureResult::*;
     let outcome = match result {
         Captured(code) => {
-            hotkey::stop_capture();
             let mut s = settings::current(app);
-            s.hotkey_code = code;
+            let for_speak = hotkey::capture_target() == hotkey::CaptureTarget::Speak;
+            // The two keys must differ; keep waiting for another one.
+            let taken = if for_speak { s.hotkey_code } else { s.speak_key };
+            if code == taken {
+                let _ = app.emit("hotkey-capture", "unsupported");
+                return;
+            }
+            hotkey::stop_capture();
+            if for_speak {
+                s.speak_key = code;
+            } else {
+                s.hotkey_code = code;
+            }
             apply_settings(app, s);
             "captured"
         }
@@ -113,6 +131,10 @@ pub fn on_hotkey_capture(app: &AppHandle, result: hotkey::CaptureResult) {
 pub struct SetupState {
     /// Name of the hold-to-talk key, e.g. "Right Option".
     hotkey_label: String,
+    /// Name of the read-aloud key.
+    speak_label: String,
+    /// The text-to-speech voice is on disk.
+    voice_ready: bool,
     platform: &'static str,
     onboarded: bool,
     /// "granted", "denied" or "unknown" (not asked yet)
@@ -128,10 +150,13 @@ pub fn get_setup_state(app: AppHandle) -> SetupState {
 }
 
 pub fn setup_state(app: &AppHandle) -> SetupState {
+    let s = settings::current(app);
     SetupState {
-        hotkey_label: hotkey::label(settings::current(app).hotkey_code),
+        hotkey_label: hotkey::label(s.hotkey_code),
+        speak_label: hotkey::label(s.speak_key),
+        voice_ready: tts::is_downloaded(app),
         platform: std::env::consts::OS,
-        onboarded: settings::current(app).onboarded,
+        onboarded: s.onboarded,
         microphone: permissions::microphone_status(),
         accessibility: permissions::accessibility_granted(false),
         model_ready: models::current_ready(app),
@@ -205,4 +230,52 @@ pub fn finish_onboarding(app: AppHandle) {
     let mut s = settings::current(&app);
     s.onboarded = true;
     apply_settings(&app, s);
+}
+
+#[derive(Serialize)]
+pub struct VoiceInfo {
+    id: &'static str,
+    label: &'static str,
+}
+
+#[derive(Serialize)]
+pub struct Voices {
+    voices: Vec<VoiceInfo>,
+    /// Size of the one-time voice download.
+    download_mb: u32,
+}
+
+#[tauri::command]
+pub fn list_voices() -> Voices {
+    Voices {
+        voices: tts::VOICES
+            .iter()
+            .map(|&(id, label)| VoiceInfo { id, label })
+            .collect(),
+        download_mb: tts::DOWNLOAD_MB,
+    }
+}
+
+#[tauri::command]
+pub fn download_voice(app: AppHandle) -> Result<(), String> {
+    tts::download(&app)
+}
+
+/// Read text aloud. Progress arrives as "speech" events.
+#[tauri::command]
+pub fn speak_text(app: AppHandle, text: String) {
+    tts::speak(&app, text);
+}
+
+#[tauri::command]
+pub fn stop_speaking(app: AppHandle) {
+    tts::stop(&app);
+    let _ = app.emit("speech", serde_json::json!({ "state": "idle", "progress": 0.0 }));
+}
+
+/// Save text as an audio file in the Downloads folder. The result arrives
+/// as a "speech" event carrying the file's path.
+#[tauri::command]
+pub fn export_speech(app: AppHandle, text: String) {
+    tts::export(&app, text);
 }

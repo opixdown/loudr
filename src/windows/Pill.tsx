@@ -1,5 +1,6 @@
-// The floating pill: waveform while recording, spinner while transcribing,
-// a short message on errors, and nothing at all when idle.
+// The floating pill: waveform while recording, spinner while transcribing
+// or getting ready to speak, moving bars while reading aloud, a short
+// message on errors, and nothing at all when idle.
 import { useEffect, useRef, useState } from "react";
 import { on, type Status } from "../lib/ipc";
 
@@ -54,7 +55,14 @@ export default function Pill() {
         {status.state === "recording" && (
           <canvas ref={canvas} style={{ width: WIDTH, height: HEIGHT }} />
         )}
-        {status.state === "transcribing" && <div className="spinner" />}
+        {(status.state === "transcribing" || status.state === "preparing") && (
+          <div className="spinner" />
+        )}
+        {status.state === "speaking" && (
+          <div className="speaking" aria-label="Reading aloud">
+            <i /><i /><i /><i /><i />
+          </div>
+        )}
         {status.state === "error" && <span className="pill-message">{status.message}</span>}
       </div>
     </div>
