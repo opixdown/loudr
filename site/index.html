@@ -6,12 +6,12 @@
     <title>Loudr · Free offline text to speech and voice typing</title>
     <meta
       name="description"
-      content="Loudr is free, offline text to speech for Mac and Windows. Select text in any app and tap a key to hear it, or turn a script into an MP3. It also types what you say. Open source."
+      content="Loudr is free, offline text to speech for Mac, Windows and Linux. Select text in any app and tap a key to hear it, or turn a script into an MP3. It also types what you say. Open source."
     />
     <meta property="og:title" content="Loudr · Free offline text to speech and voice typing" />
     <meta
       property="og:description"
-      content="Select text, tap a key, hear it. Hold a key, speak, and it is typed. Free, open source and fully offline, for macOS and Windows."
+      content="Select text, tap a key, hear it. Hold a key, speak, and it is typed. Free, open source and fully offline, for macOS, Windows and Linux."
     />
     <meta property="og:image" content="media/icon.png" />
     <meta name="theme-color" content="#000000" />
@@ -92,7 +92,28 @@
               <small id="meta-win">Windows 10 and 11 · 64-bit</small>
             </span>
           </a>
+          <!-- Shown by script.js once the latest release has a Linux build. -->
+          <a
+            class="button"
+            id="download-linux"
+            data-os="linux"
+            data-spot
+            hidden
+            href="https://github.com/opixdown/loudr/releases/latest"
+          >
+            <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect x="3" y="4" width="18" height="16" rx="3" />
+              <path d="m7 10 3 2.5L7 15M12.5 15H17" />
+            </svg>
+            <span class="button-text">
+              <strong>Download for Linux</strong>
+              <small id="meta-linux">Ubuntu 24.04 or newer · .deb</small>
+            </span>
+          </a>
         </div>
+        <p class="fine" id="linux-other" hidden>
+          Another Linux? <a id="download-appimage" href="https://github.com/opixdown/loudr/releases/latest">Get the AppImage</a>
+        </p>
         <p class="fine">
           Free forever. No account.
           <a href="https://github.com/opixdown/loudr" target="_blank" rel="noopener">Source on GitHub</a>

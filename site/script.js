@@ -1,23 +1,33 @@
 // Point the download buttons straight at the newest installers.
 //
-// Without JavaScript (or if GitHub can't be reached) both buttons still work:
+// Without JavaScript (or if GitHub can't be reached) the buttons still work:
 // they lead to the latest release page, where the files are listed.
 const REPO = "opixdown/loudr";
 const mac = document.getElementById("download-mac");
 const win = document.getElementById("download-win");
+const linux = document.getElementById("download-linux");
+const buttons = [mac, win, linux];
 
 // Highlight the button for the visitor's system; on a phone, neither.
 const platform = (navigator.userAgentData?.platform || navigator.platform || "").toLowerCase();
 const isPhone = /iphone|ipad|android/i.test(navigator.userAgent);
-if (!isPhone) {
-  if (platform.includes("win")) win.classList.add("primary");
-  else if (platform.includes("mac")) mac.classList.add("primary");
-}
-if (!mac.classList.contains("primary") && !win.classList.contains("primary")) {
-  mac.classList.add("primary");
-}
-// Put the visitor's own system first.
-if (win.classList.contains("primary")) win.parentElement.prepend(win);
+const own = isPhone
+  ? null
+  : platform.includes("win")
+    ? win
+    : platform.includes("mac")
+      ? mac
+      : platform.includes("linux")
+        ? linux
+        : null;
+const highlight = (button) => {
+  for (const other of buttons) other.classList.toggle("primary", other === button);
+  // Put the highlighted system first.
+  button.parentElement.prepend(button);
+};
+// The Linux button only appears once a Linux build is known to exist (below),
+// so until then a Linux visitor sees the Mac button highlighted.
+highlight(own && !own.hidden ? own : mac);
 
 const megabytes = (bytes) => `${Math.round(bytes / 1_000_000)} MB`;
 
@@ -36,6 +46,19 @@ fetch(`https://api.github.com/repos/${REPO}/releases/latest`)
       win.href = msi.browser_download_url;
       document.getElementById("meta-win").textContent =
         `${version} · Windows 10 and 11 · ${megabytes(msi.size)}`;
+    }
+    const deb = release.assets.find((a) => a.name.endsWith(".deb"));
+    const appImage = release.assets.find((a) => a.name.endsWith(".AppImage"));
+    if (deb) {
+      linux.href = deb.browser_download_url;
+      document.getElementById("meta-linux").textContent =
+        `${version} · Ubuntu 24.04+ · ${megabytes(deb.size)}`;
+      linux.hidden = false;
+      if (own === linux) highlight(linux);
+    }
+    if (deb && appImage) {
+      document.getElementById("download-appimage").href = appImage.browser_download_url;
+      document.getElementById("linux-other").hidden = false;
     }
   })
   .catch(() => {});

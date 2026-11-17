@@ -16,8 +16,10 @@ on:
 
 jobs:
   build:
-    # The oldest supported Ubuntu, so the result also runs on newer systems.
-    runs-on: ubuntu-22.04
+    # Not older: the speech library Loudr links (ONNX Runtime) needs the C
+    # library of Ubuntu 24.04 or newer, so that is also the oldest system the
+    # installers run on.
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v4
 

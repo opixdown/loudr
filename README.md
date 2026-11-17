@@ -6,8 +6,7 @@
 
 <p align="center">
   <b>Select text and tap a key to hear it. Hold a key and speak to type.</b><br>
-  Free, open-source, fully offline text to speech and voice typing for macOS and Windows.<br>
-  Linux builds from source (experimental).<br>
+  Free, open-source, fully offline text to speech and voice typing for macOS, Windows and Linux.<br>
   It also turns a script into an MP3.<br>
   Nothing you select or say leaves your computer.
 </p>
@@ -21,7 +20,7 @@
 
 <p align="center">
   <img src="https://img.shields.io/github/license/opixdown/loudr" alt="MIT license">
-  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows-lightgrey" alt="macOS and Windows">
+  <img src="https://img.shields.io/badge/platform-macOS%20%7C%20Windows%20%7C%20Linux-lightgrey" alt="macOS, Windows and Linux">
   <img src="https://img.shields.io/github/stars/opixdown/loudr?style=flat" alt="GitHub stars">
 </p>
 
@@ -61,17 +60,26 @@ Download the latest installer from the Releases page:
 | --------------------- | -------------------------- |
 | macOS (Apple Silicon) | `Loudr_x.y.z_aarch64.dmg`  |
 | Windows 10/11 (x64)   | `Loudr_x.y.z_x64_en-US.msi` |
+| Ubuntu 24.04+, Debian 13+ (x64) | `Loudr_x.y.z_amd64.deb` |
+| Other recent Linux (x64) | `Loudr_x.y.z_amd64.AppImage` |
 
 The builds are not signed with a paid developer certificate yet:
 
 - **macOS:** the first time, right-click `Loudr.app` and choose **Open**.
 - **Windows:** in the SmartScreen dialog choose **More info**, then **Run anyway**.
+- **Linux (.deb):** `sudo apt install ./Loudr_x.y.z_amd64.deb`
+- **Linux (AppImage):** `chmod +x Loudr_x.y.z_amd64.AppImage`, then run it.
+
+Linux needs one more step, because Loudr reads the hold key straight from the
+keyboard: `sudo usermod -aG input $USER`, then log out and back in. Loudr
+tells you if this is missing. See the [Linux notes](#linux-experimental) for
+what that permission means. Linux is new and the least tested of the three.
 
 On first launch Loudr asks for:
 
 1. **Microphone** access, to hear you while the hotkey is held.
 2. **Accessibility** access (macOS only), to notice the hotkey and to paste
-   the text into other apps.
+   the text into other apps. On Linux this is the keyboard step above.
 3. A **speech model** download (Base, 142 MB, by default).
 
 Text to speech is optional and needs one more download (the voice, about
@@ -195,26 +203,25 @@ APPLE_SIGNING_IDENTITY="Apple Development: you@example.com (TEAMID)" npm run tau
 ```
 
 Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds the
-`.dmg` and `.msi` and attaches them to a draft GitHub release.
+`.dmg`, `.msi`, `.deb` and AppImage and attaches them to a draft GitHub
+release.
 
 ### Linux (experimental)
 
-Linux works when built from source; there is no installer yet. Thanks to
-[@sshprashant02](https://github.com/sshprashant02) for the first version.
-
-On Ubuntu or Debian, install the build packages first:
+Thanks to [@sshprashant02](https://github.com/sshprashant02) for the first
+version of the Linux build. To build it yourself on Ubuntu or Debian, install
+the build packages first:
 
 ```sh
 sudo apt-get install libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
   librsvg2-dev libxdo-dev libssl-dev libasound2-dev build-essential cmake clang
 ```
 
-Then build without packaging and run the result:
+Then build the installers (or pass `--no-bundle` for just the program):
 
 ```sh
 npm install
-npm run tauri build -- --no-bundle
-./src-tauri/target/release/loudr
+npm run tauri build -- --bundles deb,appimage
 ```
 
 Things to know:
@@ -270,15 +277,15 @@ hotkey up   -> close microphone -> resample to 16 kHz mono
 
 ## Not yet
 
-No AI rewriting of dictated text, no accounts, no auto-update, no Linux
-installer, no Intel Mac build, no CUDA.
+No AI rewriting of dictated text, no accounts, no auto-update, no Intel Mac
+build, no CUDA.
 
 ## Contributing
 
 Loudr is meant to be built on. Issues and pull requests are welcome. Ideas
 that would make good first contributions:
 
-- A Linux installer (.deb or AppImage), and testing on more desktops
+- Testing and fixes on more Linux desktops (KDE, Xfce) and distributions
 - An Intel Mac build
 - A custom vocabulary for names and technical terms
 - Restoring images and files on the clipboard after pasting

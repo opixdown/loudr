@@ -21,7 +21,7 @@ jobs:
             bundles: dmg
           - os: windows-latest # x64, CPU
             bundles: msi
-          - os: ubuntu-22.04 # x64, CPU; the oldest supported Ubuntu
+          - os: ubuntu-24.04 # x64, CPU; the oldest Ubuntu the speech library supports
             bundles: deb,appimage
     runs-on: ${{ matrix.os }}
     steps:
