@@ -280,6 +280,51 @@ pub fn export_speech(app: AppHandle, text: String) {
     tts::export(&app, text);
 }
 
+#[derive(Serialize)]
+pub struct StudioProvider {
+    id: &'static str,
+    name: &'static str,
+    /// An API key is saved for this provider (the key itself stays private).
+    has_key: bool,
+    models: Vec<tts::studio::Choice>,
+}
+
+/// The online voice providers, and whether each has a key saved.
+#[tauri::command]
+pub fn studio_providers(app: AppHandle) -> Vec<StudioProvider> {
+    use tts::studio::{self, Provider};
+    [Provider::ElevenLabs, Provider::Gemini]
+        .into_iter()
+        .map(|provider| StudioProvider {
+            id: provider.id(),
+            name: provider.name(),
+            has_key: studio::key(&app, provider).is_some(),
+            models: provider
+                .models()
+                .iter()
+                .map(|&(id, label)| studio::Choice { id: id.into(), label: label.into() })
+                .collect(),
+        })
+        .collect()
+}
+
+fn studio_provider(id: &str) -> Result<tts::studio::Provider, String> {
+    tts::studio::Provider::from_id(id).ok_or_else(|| format!("Unknown provider: {id}"))
+}
+
+/// Save a provider's API key; an empty key removes it.
+#[tauri::command]
+pub fn set_studio_key(app: AppHandle, provider: String, key: String) -> Result<(), String> {
+    tts::studio::set_key(&app, studio_provider(&provider)?, &key)
+}
+
+/// The voices the saved key can use. Asks the provider, so it runs off the
+/// main thread.
+#[tauri::command(async)]
+pub fn list_studio_voices(app: AppHandle, provider: String) -> Result<Vec<tts::studio::Choice>, String> {
+    tts::studio::voices(&app, studio_provider(&provider)?)
+}
+
 /// The start of the text that was read aloud last, if its audio can be saved.
 #[tauri::command]
 pub fn last_speech(app: AppHandle) -> Option<String> {

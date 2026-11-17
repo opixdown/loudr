@@ -17,6 +17,13 @@ pub struct Settings {
     pub voice: String,
     /// Speaking rate; 1.0 is normal.
     pub voice_speed: f32,
+    /// Online voice used for scripts: "" (off), "elevenlabs" or "gemini".
+    /// See `tts::studio`. API keys are stored separately.
+    pub studio_provider: String,
+    pub elevenlabs_voice: String,
+    pub elevenlabs_model: String,
+    pub gemini_voice: String,
+    pub gemini_model: String,
     /// "system", "light" or "dark".
     pub theme: String,
     /// Model size: tiny, base, small or medium.
@@ -37,6 +44,11 @@ impl Default for Settings {
             speak_key: crate::hotkey::DEFAULT_SPEAK_KEY,
             voice: crate::tts::DEFAULT_VOICE.into(),
             voice_speed: 1.0,
+            studio_provider: String::new(),
+            elevenlabs_voice: String::new(),
+            elevenlabs_model: String::new(),
+            gemini_voice: String::new(),
+            gemini_model: String::new(),
             theme: "system".into(),
             model: "base".into(),
             language: "en".into(),

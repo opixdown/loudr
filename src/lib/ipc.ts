@@ -7,6 +7,12 @@ export type Settings = {
   speak_key: number;
   voice: string;
   voice_speed: number;
+  /** Online voice for scripts: "" (off), "elevenlabs" or "gemini". */
+  studio_provider: "" | "elevenlabs" | "gemini";
+  elevenlabs_voice: string;
+  elevenlabs_model: string;
+  gemini_voice: string;
+  gemini_model: string;
   theme: "system" | "light" | "dark";
   model: string;
   language: string;
@@ -50,6 +56,17 @@ export type Voices = {
   download_mb: number;
 };
 
+export type Choice = { id: string; label: string };
+
+/** An online voice provider the user can connect with their own API key. */
+export type StudioProvider = {
+  id: "elevenlabs" | "gemini";
+  name: string;
+  /** A key is saved (the key itself never reaches the window). */
+  has_key: boolean;
+  models: Choice[];
+};
+
 /** What the speech worker is doing. */
 export type SpeechEvent = {
   state: "idle" | "preparing" | "speaking" | "exporting";
@@ -88,6 +105,10 @@ export const api = {
   exportSpeech: (text: string) => invoke<void>("export_speech", { text }),
   saveLastSpeech: () => invoke<void>("save_last_speech"),
   lastSpeech: () => invoke<string | null>("last_speech"),
+  studioProviders: () => invoke<StudioProvider[]>("studio_providers"),
+  setStudioKey: (provider: string, key: string) =>
+    invoke<void>("set_studio_key", { provider, key }),
+  listStudioVoices: (provider: string) => invoke<Choice[]>("list_studio_voices", { provider }),
 };
 
 /** Subscribe to a backend event; returns a cleanup function for useEffect. */

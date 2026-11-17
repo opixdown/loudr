@@ -7,6 +7,7 @@
 mod engine;
 mod hindi;
 mod player;
+pub mod studio;
 mod text;
 
 use crate::settings::{self, AppState};
@@ -99,8 +100,9 @@ pub fn download(app: &AppHandle) -> Result<(), String> {
 enum Command {
     /// Copy the selection in the focused app and read it aloud.
     SpeakSelection,
+    /// Speak a script from the window (with the studio voice, if one is on).
     Speak(String),
-    /// Ask where to save, then write the text as an audio file.
+    /// Ask where to save, then write a script as an audio file.
     Export(String),
     /// Save whatever was read aloud last.
     SaveLast,
@@ -110,9 +112,64 @@ enum Command {
 /// making the audio again.
 struct Spoken {
     text: String,
+    /// The offline voice's id, or a studio voice's tag.
     voice: String,
     speed: f32,
     samples: Vec<f32>,
+}
+
+/// Which voice a piece of text is made with, and how.
+struct Voice<'a> {
+    /// `None` is the built-in offline voice.
+    studio: Option<studio::Studio>,
+    engine: &'a mut Option<Engine>,
+    id: String,
+    speed: f32,
+}
+
+impl<'a> Voice<'a> {
+    /// The voice for a script: the studio voice if one is switched on.
+    fn for_script(app: &AppHandle, engine: &'a mut Option<Engine>) -> Self {
+        match studio::current(app) {
+            Some(studio) => Self { id: studio.tag(), speed: 1.0, studio: Some(studio), engine },
+            None => Self::offline(app, engine),
+        }
+    }
+
+    /// The offline voice, used for anything selected in another app.
+    fn offline(app: &AppHandle, engine: &'a mut Option<Engine>) -> Self {
+        let s = settings::current(app);
+        Self { studio: None, engine, id: s.voice, speed: s.voice_speed }
+    }
+
+    /// Split text into the pieces this voice is asked for one at a time.
+    fn pieces(&self, text: &str) -> Vec<String> {
+        let chunks = text::chunks(text);
+        if self.studio.is_some() { studio::pieces(&chunks) } else { chunks }
+    }
+
+    /// Load whatever the voice needs before the first piece.
+    fn prepare(&mut self, app: &AppHandle) -> Result<(), String> {
+        if self.studio.is_none() {
+            loaded(app, self.engine)?;
+        }
+        Ok(())
+    }
+
+    fn synthesize(&mut self, piece: &str) -> Result<Vec<f32>, String> {
+        match &self.studio {
+            Some(studio) => studio.synthesize(piece),
+            None => self
+                .engine
+                .as_mut()
+                .ok_or("The voice is not loaded")?
+                .synthesize(piece, &self.id, self.speed),
+        }
+    }
+
+    fn name(&self) -> &str {
+        self.studio.as_ref().map_or(&self.id, |studio| studio.name())
+    }
 }
 
 /// What the speech worker is doing, sent to the window as "speech" events.
@@ -237,20 +294,22 @@ pub fn spawn(app: &AppHandle) {
                 if !cancelled() {
                     let result = match command {
                         Command::SpeakSelection => paste::copy_selection(&app).and_then(|text| {
-                            speak_now(&app, &mut engine, &mut last, &text, &cancelled)
+                            let voice = Voice::offline(&app, &mut engine);
+                            speak_now(&app, voice, &mut last, &text, &cancelled)
                         }),
                         Command::Speak(text) => {
-                            speak_now(&app, &mut engine, &mut last, &text, &cancelled)
+                            let voice = Voice::for_script(&app, &mut engine);
+                            speak_now(&app, voice, &mut last, &text, &cancelled)
                         }
                         Command::Export(text) => {
-                            export_now(&app, &mut engine, &mut last, &text, &cancelled)
+                            let voice = Voice::for_script(&app, &mut engine);
+                            export_now(&app, Some(voice), &mut last, &text, &cancelled)
                                 .map(|path| event.saved = path.map(|p| p.display().to_string()))
                         }
+                        // Saves the audio exactly as it was heard.
                         Command::SaveLast => match last.as_ref().map(|l| l.text.clone()) {
-                            Some(text) => {
-                                export_now(&app, &mut engine, &mut last, &text, &cancelled)
-                                    .map(|path| event.saved = path.map(|p| p.display().to_string()))
-                            }
+                            Some(text) => export_now(&app, None, &mut last, &text, &cancelled)
+                                .map(|path| event.saved = path.map(|p| p.display().to_string())),
                             None => Err("Nothing has been read aloud yet.".into()),
                         },
                     };
@@ -289,28 +348,27 @@ fn loaded<'a>(app: &AppHandle, engine: &'a mut Option<Engine>) -> Result<&'a mut
 
 fn speak_now(
     app: &AppHandle,
-    engine: &mut Option<Engine>,
+    mut voice: Voice,
     last: &mut Option<Spoken>,
     text: &str,
     cancelled: &dyn Fn() -> bool,
 ) -> Result<(), String> {
     let started = Instant::now();
-    let chunks = text::chunks(text);
+    let chunks = voice.pieces(text);
     if chunks.is_empty() {
         return Err("Nothing to read".into());
     }
     status::set(app, Status::Preparing);
     emit(app, "preparing", 0.0);
 
-    let engine = loaded(app, engine)?;
-    let s = settings::current(app);
+    voice.prepare(app)?;
     let player = Player::open()?;
     let mut samples: Vec<f32> = Vec::new();
     for (index, chunk) in chunks.iter().enumerate() {
         if cancelled() {
             return Ok(());
         }
-        let audio = engine.synthesize(chunk, &s.voice, s.voice_speed)?;
+        let audio = voice.synthesize(chunk)?;
         if cancelled() {
             return Ok(());
         }
@@ -321,7 +379,7 @@ fn speak_now(
                 "speech: first audio after {:?} ({} chunks, voice {})",
                 started.elapsed(),
                 chunks.len(),
-                s.voice
+                voice.name()
             );
             status::set(app, Status::Speaking);
             emit(app, "speaking", 0.0);
@@ -335,8 +393,8 @@ fn speak_now(
     // stopped early.
     *last = Some(Spoken {
         text: text.trim().to_string(),
-        voice: s.voice,
-        speed: s.voice_speed,
+        voice: voice.id,
+        speed: voice.speed,
         samples,
     });
     player.finish(cancelled);
@@ -345,16 +403,16 @@ fn speak_now(
 
 /// Ask where to save, make the audio (unless it was just read aloud) and
 /// write it. Returns the saved file, or `None` if the user cancelled.
+/// Without a `voice`, the last reading is saved as it is.
 fn export_now(
     app: &AppHandle,
-    engine: &mut Option<Engine>,
+    voice: Option<Voice>,
     last: &mut Option<Spoken>,
     text: &str,
     cancelled: &dyn Fn() -> bool,
 ) -> Result<Option<PathBuf>, String> {
     let text = text.trim();
-    let chunks = text::chunks(text);
-    if chunks.is_empty() {
+    if text::chunks(text).is_empty() {
         return Err("Nothing to save. Type or paste some text first.".into());
     }
     let Some(path) = ask_where_to_save(app, text) else {
@@ -362,28 +420,32 @@ fn export_now(
     };
     emit(app, "exporting", 0.0);
 
-    let s = settings::current(app);
-    let reusable = last
-        .as_ref()
-        .is_some_and(|l| l.text == text && l.voice == s.voice && l.speed == s.voice_speed);
-    if !reusable {
-        let engine = loaded(app, engine)?;
+    // Audio that was just played with the same voice is not made (or paid
+    // for) a second time.
+    let fresh = voice.filter(|voice| {
+        !last
+            .as_ref()
+            .is_some_and(|l| l.text == text && l.voice == voice.id && l.speed == voice.speed)
+    });
+    if let Some(mut voice) = fresh {
+        voice.prepare(app)?;
+        let chunks = voice.pieces(text);
         let mut samples: Vec<f32> = Vec::new();
         for (index, chunk) in chunks.iter().enumerate() {
             if cancelled() {
                 return Ok(None);
             }
-            samples.extend(engine.synthesize(chunk, &s.voice, s.voice_speed)?);
+            samples.extend(voice.synthesize(chunk)?);
             emit(app, "exporting", (index + 1) as f32 / chunks.len() as f32);
         }
         *last = Some(Spoken {
             text: text.to_string(),
-            voice: s.voice,
-            speed: s.voice_speed,
+            voice: voice.id,
+            speed: voice.speed,
             samples,
         });
     }
-    let samples = &last.as_ref().unwrap().samples;
+    let samples = &last.as_ref().ok_or("Nothing has been read aloud yet.")?.samples;
 
     let is_wav = path
         .extension()

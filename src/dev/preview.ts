@@ -17,6 +17,11 @@ const settings = {
   speak_key: 54,
   voice: "am_puck",
   voice_speed: 1,
+  studio_provider: q.get("studio") ?? "",
+  elevenlabs_voice: "",
+  elevenlabs_model: "",
+  gemini_voice: "",
+  gemini_model: "",
   theme: q.get("theme") ?? "system",
   model: "base",
   language: "en",
@@ -32,7 +37,10 @@ mockIPC(
       case "get_settings":
         return settings;
       case "set_settings":
-        Object.assign(settings, (args as { settings: typeof settings }).settings);
+        Object.assign(
+          settings,
+          (args as { settings: typeof settings }).settings,
+        );
         return;
       case "get_setup_state":
         return {
@@ -54,6 +62,39 @@ mockIPC(
           { id: "base", label: "Base", size_mb: 142, downloaded: true },
           { id: "small", label: "Small", size_mb: 466, downloaded: false },
           { id: "medium", label: "Medium", size_mb: 1500, downloaded: false },
+        ];
+      case "studio_providers":
+        return [
+          {
+            id: "elevenlabs",
+            name: "ElevenLabs",
+            has_key: flag("key", false),
+            models: [
+              {
+                id: "eleven_multilingual_v2",
+                label: "Multilingual v2 · steady, 29 languages",
+              },
+              { id: "eleven_v3", label: "v3 · most expressive" },
+            ],
+          },
+          {
+            id: "gemini",
+            name: "Google Gemini",
+            has_key: flag("key", false),
+            models: [
+              {
+                id: "gemini-3.8-flash-tts",
+                label: "3.8 Flash TTS · best quality",
+              },
+            ],
+          },
+        ];
+      case "set_studio_key":
+        return;
+      case "list_studio_voices":
+        return [
+          { id: "a", label: "Rachel" },
+          { id: "b", label: "Aarav · cloned" },
         ];
       case "list_voices":
         return {

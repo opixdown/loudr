@@ -134,6 +134,15 @@ label > span { font-weight: 500; }
 .row-text > .clip { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .inline { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
 .inline.end { justify-content: flex-end; margin-top: 0; }
+.inline .grow { flex: 1; }
+.inline.key { margin-top: 0; }
+.inline.key > input {
+  flex: 1; min-width: 0; font: inherit; color: var(--text);
+  background: var(--control); border: 1px solid var(--border); border-radius: 10px; padding: 7px 10px;
+}
+.inline.key > input::placeholder { color: var(--muted); }
+.inline.key > input:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+section > .error { padding: 0 16px; }
 
 .check {
   flex: none; width: 20px; height: 20px; margin-top: 1px; border-radius: 50%;

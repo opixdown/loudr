@@ -60,6 +60,9 @@ pub fn run() {
             commands::export_speech,
             commands::save_last_speech,
             commands::last_speech,
+            commands::studio_providers,
+            commands::set_studio_key,
+            commands::list_studio_voices,
         ])
         .setup(|app| {
             // Menu bar app: no Dock icon, no app switcher entry.

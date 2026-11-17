@@ -37,8 +37,11 @@
 - **Types what you say.** Hold a key, speak, release, and the text lands in
   whatever app has focus. Speech is transcribed on your computer with
   [whisper.cpp](https://github.com/ggerganov/whisper.cpp).
-- **Offline.** The only network requests Loudr ever makes are the one-time
-  model downloads.
+- **Offline.** The only network requests Loudr makes by itself are the
+  one-time model downloads.
+- **Studio voices, if you want them.** For reels and voice-overs you can
+  connect your own ElevenLabs or Google Gemini account. That part is online
+  and off until you add a key.
 - **Free, with no limits.** No account, no subscription, no word cap, no
   telemetry.
 - **Fast.** The model stays loaded in memory (Metal on Apple Silicon). On an
@@ -111,6 +114,27 @@ letters ("kal meeting hai") and English words mixed into either.
 
 English uses Whisper's dedicated `.en` models. Any other language uses the
 multilingual model of the same size, which is a separate download.
+
+### Studio voices (optional, online)
+
+The built-in voices are small enough to run on any laptop. If a script needs
+to sound like a real person, connect an account you already have:
+
+1. Open **Text to speech** and set **Studio voice** to ElevenLabs or Google
+   Gemini.
+2. Paste an API key from that provider and pick a voice.
+3. **Script to audio** now plays and saves with that voice.
+
+What this changes:
+
+- The script you play or save is sent to the provider you chose, and it uses
+  your account's credit. Playing a script and then saving it is charged once.
+- Reading a selection aloud never uses a studio voice, so text you select in
+  other apps stays on your computer.
+- The key is kept in `keys.json` in Loudr's settings folder, readable only by
+  your user account. It is sent to that provider and nowhere else.
+- Set **Studio voice** back to Off, or remove the key, to go fully offline
+  again.
 
 ### Good to know
 
