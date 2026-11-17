@@ -135,7 +135,17 @@ pub fn run() {
             }
         })
         .build(tauri::generate_context!())
-        .expect("error while building Loudr")
+        .unwrap_or_else(|e| {
+            // Almost always a missing or broken WebView2 on Windows, which
+            // draws Loudr's windows. Say so instead of a bare error.
+            #[cfg(target_os = "windows")]
+            panic!(
+                "Loudr could not open its windows: {e}\n\nInstall or repair Microsoft Edge \
+                 WebView2 from https://go.microsoft.com/fwlink/p/?LinkId=2124703 and start Loudr again."
+            );
+            #[cfg(not(target_os = "windows"))]
+            panic!("Loudr could not start: {e}");
+        })
         .run(|_app, _event| {
             // macOS: opening the app again (Finder, Spotlight, Launchpad)
             // while it runs in the menu bar brings up the window.

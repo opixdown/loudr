@@ -1,0 +1,6 @@
+[env]
+# Build whisper.cpp for a common baseline (AVX2 on x86), not for the CPU of
+# the machine doing the build. The release builds run on GitHub's servers,
+# whose CPUs have instructions (AVX-512) that most laptops lack; a build tuned
+# for them stops with "illegal instruction" the moment it loads a model.
+GGML_NATIVE = "OFF"

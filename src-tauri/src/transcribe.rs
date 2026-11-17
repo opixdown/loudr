@@ -17,6 +17,20 @@ impl Transcriber {
         if !model_path.exists() {
             return Err(format!("Model missing: {}", model_path.display()));
         }
+        // whisper.cpp is built for AVX2 (see .cargo/config.toml). On an older
+        // processor it would stop the app with "illegal instruction", so say
+        // why instead.
+        #[cfg(target_arch = "x86_64")]
+        if !(std::arch::is_x86_feature_detected!("avx2")
+            && std::arch::is_x86_feature_detected!("fma")
+            && std::arch::is_x86_feature_detected!("f16c"))
+        {
+            return Err(
+                "Voice typing needs a processor with AVX2 (most PCs from 2015 on). \
+                 Reading aloud still works."
+                    .into(),
+            );
+        }
         // Send whisper.cpp's own (very chatty) output to the log crate
         // instead of stderr. Safe to call more than once.
         whisper_rs::install_logging_hooks();

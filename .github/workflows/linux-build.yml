@@ -41,6 +41,8 @@ jobs:
       - uses: Swatinem/rust-cache@v2
         with:
           workspaces: src-tauri
+          # Bumped when the build settings change, so stale C++ builds are not reused.
+          prefix-key: v1-portable-cpu
 
       - run: npm ci
 

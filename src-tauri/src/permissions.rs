@@ -121,8 +121,10 @@ pub fn open_privacy_settings(pane: &str) {
     #[cfg(target_os = "windows")]
     {
         let _ = pane;
-        let _ = std::process::Command::new("cmd")
-            .args(["/C", "start", "ms-settings:privacy-microphone"])
+        // explorer opens ms-settings: links without flashing a console
+        // window the way `cmd /C start` does.
+        let _ = std::process::Command::new("explorer")
+            .arg("ms-settings:privacy-microphone")
             .spawn();
     }
 }
