@@ -24,6 +24,10 @@ jobs:
   released:
     if: ${{ inputs.release }}
     runs-on: windows-latest
+    # Write access is what lets the job see draft releases, so an installer
+    # can be tested before the release is published.
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
