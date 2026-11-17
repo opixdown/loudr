@@ -1,0 +1,5 @@
+node_modules
+frames
+out
+audio/mix.wav
+.venv

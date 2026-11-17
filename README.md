@@ -231,6 +231,7 @@ hotkey up   -> close microphone -> resample to 16 kHz mono
 | `src/windows/`                | React UI: pill, first-run flow, settings       |
 | `site/`                       | The website (static HTML, hosted on Vercel)    |
 | `video/`                      | The promo videos (Remotion)                    |
+| `video/studio/`               | The studio voices film (Stageshow kit, recorded frame by frame) |
 
 ## Not in v1
 
