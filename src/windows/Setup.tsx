@@ -45,7 +45,23 @@ export function MicrophoneRow({ setup }: { setup: SetupState }) {
 }
 
 export function AccessibilityRow({ setup }: { setup: SetupState }) {
-  // Only macOS gates keyboard access.
+  // Linux: the hold key is read from /dev/input, which needs group membership.
+  if (setup.platform === "linux") {
+    if (setup.accessibility) return null;
+    return (
+      <div className="row">
+        <Check ok={false} />
+        <div className="row-text">
+          <strong>Keyboard access</strong>
+          <span>
+            Loudr can't see your hold key yet. Run this in a terminal, then log out and back in:
+          </span>
+          <code className="command">sudo usermod -aG input $USER</code>
+        </div>
+      </div>
+    );
+  }
+  // Windows does not gate keyboard access.
   if (setup.platform !== "macos") return null;
   return (
     <div className="row">

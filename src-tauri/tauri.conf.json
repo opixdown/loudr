@@ -58,6 +58,16 @@
     "macOS": {
       "entitlements": "Entitlements.plist",
       "minimumSystemVersion": "11.0"
-    }
+    },
+    "linux": {
+      "deb": {
+        "depends": [
+          "libxdo3",
+          "libasound2"
+        ]
+      }
+    },
+    "category": "Utility",
+    "shortDescription": "Offline voice typing and text to speech"
   }
 }

@@ -1,7 +1,6 @@
-# Builds Loudr on Linux and checks that it starts.
-#
-# Linux support is experimental and built from source only (no installer),
-# so this is what keeps it compiling as the app changes.
+# Builds the Linux installers (.deb and AppImage) and checks that each one
+# starts. Nobody on the project develops on Linux, so this is the regular
+# proof that the Linux build still works.
 name: Linux build
 
 on:
@@ -17,7 +16,8 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    # The oldest supported Ubuntu, so the result also runs on newer systems.
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
 
@@ -27,7 +27,7 @@ jobs:
           sudo apt-get install -y \
             libwebkit2gtk-4.1-dev libayatana-appindicator3-dev librsvg2-dev \
             libxdo-dev libssl-dev libasound2-dev \
-            build-essential cmake clang file xvfb
+            build-essential cmake clang file xvfb libfuse2
 
       - uses: actions/setup-node@v4
         with:
@@ -42,21 +42,38 @@ jobs:
 
       - run: npm ci
 
-      - run: npm run tauri build -- --no-bundle
+      - run: npm run tauri build -- --bundles deb,appimage
 
-      - name: Start Loudr and see if it stays up
+      - name: What the app links against, and what the .deb asks for
         run: |
-          xvfb-run -a src-tauri/target/release/loudr &
+          ldd src-tauri/target/release/loudr | grep -vE "linux-vdso|ld-linux" | awk '{print $1}' | sort
+          dpkg-deb -I src-tauri/target/release/bundle/deb/*.deb | grep -E "Depends|Version|Installed-Size"
+          ls -la src-tauri/target/release/bundle/deb/*.deb src-tauri/target/release/bundle/appimage/*.AppImage
+
+      - name: Install the .deb and see if Loudr stays up
+        run: |
+          sudo apt-get install -y ./src-tauri/target/release/bundle/deb/*.deb
+          xvfb-run -a loudr &
           sleep 20
-          logs="$HOME/.local/share/app.loudr.desktop/logs"
-          if [ -d "$logs" ]; then
-            for file in "$logs"/*; do echo "===== $(basename "$file") ====="; cat "$file"; done
-          else
-            echo "No log folder at $logs"
-          fi
+          find "$HOME/.local/share" "$HOME/.config" -path "*app.loudr.desktop*" -name "*.log" -exec sh -c 'echo "===== $1 ====="; cat "$1"' _ {} \;
           if ! pgrep -x loudr > /dev/null; then
             echo "Loudr stopped on its own"
             exit 1
           fi
-          echo "Loudr was still running after 20 seconds"
+          echo "Loudr (.deb) was still running after 20 seconds"
           pkill -x loudr
+          sleep 2
+
+      - name: Start the AppImage and see if it stays up
+        run: |
+          image=$(ls src-tauri/target/release/bundle/appimage/*.AppImage)
+          chmod +x "$image"
+          # No FUSE inside CI, so let the AppImage unpack itself.
+          APPIMAGE_EXTRACT_AND_RUN=1 xvfb-run -a "$image" &
+          sleep 25
+          if ! pgrep -f "loudr" > /dev/null; then
+            echo "Loudr (AppImage) stopped on its own"
+            exit 1
+          fi
+          echo "Loudr (AppImage) was still running after 25 seconds"
+          pkill -f loudr || true

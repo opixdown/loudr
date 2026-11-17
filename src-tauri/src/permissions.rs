@@ -1,5 +1,6 @@
-//! OS permission checks. Only macOS gates these; on Windows everything
-//! reports as granted.
+//! OS permission checks. macOS gates the microphone and the keyboard; Linux
+//! gates the keyboard (reading /dev/input); on Windows everything reports as
+//! granted.
 
 /// Whether this process may observe and send keyboard events (macOS
 /// Accessibility). With `prompt`, macOS shows its "open System Settings"
@@ -24,7 +25,27 @@ pub fn accessibility_granted(prompt: bool) -> bool {
     }
 }
 
-#[cfg(not(target_os = "macos"))]
+/// On Linux the hold key is read from /dev/input, which only members of the
+/// `input` group may open. True if at least one input device can be read (or
+/// there are none to read, as on a machine without a keyboard).
+#[cfg(target_os = "linux")]
+pub fn accessibility_granted(_prompt: bool) -> bool {
+    let Ok(dir) = std::fs::read_dir("/dev/input") else {
+        return true;
+    };
+    let mut devices = dir
+        .flatten()
+        .map(|entry| entry.path())
+        .filter(|path| {
+            path.file_name()
+                .and_then(|name| name.to_str())
+                .is_some_and(|name| name.starts_with("event"))
+        })
+        .peekable();
+    devices.peek().is_none() || devices.any(|path| std::fs::File::open(path).is_ok())
+}
+
+#[cfg(not(any(target_os = "macos", target_os = "linux")))]
 pub fn accessibility_granted(_prompt: bool) -> bool {
     true
 }
