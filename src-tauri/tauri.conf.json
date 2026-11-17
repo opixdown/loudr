@@ -18,7 +18,8 @@
         "height": 740,
         "resizable": false,
         "visible": false,
-        "center": true
+        "center": true,
+        "create": false
       },
       {
         "label": "pill",
@@ -34,7 +35,8 @@
         "resizable": false,
         "shadow": false,
         "visible": true,
-        "visibleOnAllWorkspaces": true
+        "visibleOnAllWorkspaces": true,
+        "create": false
       }
     ],
     "security": {

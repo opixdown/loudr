@@ -69,12 +69,12 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
-            // Tauri opens the windows before this runs, so their pages can
-            // already be asking for settings. On Windows those requests are
-            // answered as soon as anything here lets window messages through
-            // (changing the theme, adding the tray icon). Everything they
-            // can reach must exist first, or the app stops with
-            // "state() called before manage()".
+            // The windows are listed in tauri.conf.json with "create": false
+            // and opened here, after everything their pages ask for exists.
+            // If Tauri opened them itself, it would do so before this code
+            // runs, and on Windows a page can already ask for the settings
+            // while the next window is being created: 0.4.0 stopped with
+            // "state() called before manage()" that way.
             let handle = app.handle();
             let loaded = settings::load(handle);
             let (hotkey_code, speak_key, theme) =
@@ -85,6 +85,10 @@ pub fn run() {
             });
             pipeline::spawn(handle);
             tts::spawn(handle);
+
+            for window in app.config().app.windows.clone() {
+                tauri::WebviewWindowBuilder::from_config(handle, &window)?.build()?;
+            }
 
             hotkey::set_key(hotkey_code);
             hotkey::set_speak_key(speak_key);
