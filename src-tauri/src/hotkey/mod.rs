@@ -19,6 +19,10 @@ use macos as platform;
 mod windows;
 #[cfg(target_os = "windows")]
 use windows as platform;
+#[cfg(target_os = "linux")]
+mod linux;
+#[cfg(target_os = "linux")]
+use linux as platform;
 
 use std::sync::atomic::{AtomicBool, AtomicU32, Ordering};
 

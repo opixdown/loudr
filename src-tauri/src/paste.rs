@@ -24,6 +24,20 @@ pub fn paste(app: &AppHandle, text: &str) -> Result<(), String> {
 
     // The target app reads the clipboard a moment after the keystroke, so
     // restore on a delay, off the hot path.
+    //
+    //
+    // On Linux (X11) the text is only served while this `Clipboard` exists:
+    // dropping it right away can empty the clipboard before the target app has
+    // read it. So here the same object is moved into the thread and kept
+    // until the delay is over.
+    #[cfg(target_os = "linux")]
+    std::thread::spawn(move || {
+        std::thread::sleep(Duration::from_millis(400));
+        if let Some(previous) = previous {
+            let _ = clipboard.set_text(previous);
+        }
+    });
+    #[cfg(not(target_os = "linux"))]
     if let Some(previous) = previous {
         std::thread::spawn(move || {
             std::thread::sleep(Duration::from_millis(400));
