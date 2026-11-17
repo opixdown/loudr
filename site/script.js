@@ -1,7 +1,6 @@
-// Point the download buttons straight at the newest installers.
-//
-// Without JavaScript (or if GitHub can't be reached) the buttons still work:
-// they lead to the latest release page, where the files are listed.
+// The download buttons link to /download/<system> on this site, which starts
+// the newest installer (see api/download.js). This only fills in the version
+// and size under each button, and shows Linux once a Linux build exists.
 const REPO = "opixdown/loudr";
 const mac = document.getElementById("download-mac");
 const win = document.getElementById("download-win");
@@ -38,26 +37,22 @@ fetch(`https://api.github.com/repos/${REPO}/releases/latest`)
     const dmg = release.assets.find((a) => a.name.endsWith(".dmg"));
     const msi = release.assets.find((a) => a.name.endsWith(".msi"));
     if (dmg) {
-      mac.href = dmg.browser_download_url;
       document.getElementById("meta-mac").textContent =
         `${version} · Apple Silicon · ${megabytes(dmg.size)}`;
     }
     if (msi) {
-      win.href = msi.browser_download_url;
       document.getElementById("meta-win").textContent =
         `${version} · Windows 10 and 11 · ${megabytes(msi.size)}`;
     }
     const deb = release.assets.find((a) => a.name.endsWith(".deb"));
     const appImage = release.assets.find((a) => a.name.endsWith(".AppImage"));
     if (deb) {
-      linux.href = deb.browser_download_url;
       document.getElementById("meta-linux").textContent =
         `${version} · Ubuntu 24.04+ · ${megabytes(deb.size)}`;
       linux.hidden = false;
       if (own === linux) highlight(linux);
     }
     if (deb && appImage) {
-      document.getElementById("download-appimage").href = appImage.browser_download_url;
       document.getElementById("linux-other").hidden = false;
     }
   })

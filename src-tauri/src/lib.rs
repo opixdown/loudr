@@ -69,20 +69,28 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Accessory);
 
+            // Tauri opens the windows before this runs, so their pages can
+            // already be asking for settings. On Windows those requests are
+            // answered as soon as anything here lets window messages through
+            // (changing the theme, adding the tray icon). Everything they
+            // can reach must exist first, or the app stops with
+            // "state() called before manage()".
             let handle = app.handle();
             let loaded = settings::load(handle);
-            hotkey::set_key(loaded.hotkey_code);
-            hotkey::set_speak_key(loaded.speak_key);
-            commands::apply_theme(handle, &loaded.theme);
+            let (hotkey_code, speak_key, theme) =
+                (loaded.hotkey_code, loaded.speak_key, loaded.theme.clone());
             app.manage(AppState {
                 settings: Mutex::new(loaded),
                 downloading: AtomicBool::new(false),
             });
-
-            tray::create(handle)?;
-            pill::setup(handle)?;
             pipeline::spawn(handle);
             tts::spawn(handle);
+
+            hotkey::set_key(hotkey_code);
+            hotkey::set_speak_key(speak_key);
+            commands::apply_theme(handle, &theme);
+            tray::create(handle)?;
+            pill::setup(handle)?;
 
             // The hotkey listener only forwards events; all the work happens
             // on the pipeline and speech threads.

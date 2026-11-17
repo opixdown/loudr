@@ -1,6 +1,6 @@
 [package]
 name = "loudr"
-version = "0.4.0"
+version = "0.4.1"
 description = "Free, offline voice typing"
 license = "MIT"
 edition = "2024"

@@ -54,20 +54,20 @@
 
 ## Install
 
-Download the latest installer from the Releases page:
+Download the latest installer from [the website](https://getloudr.vercel.app) or the Releases page:
 
-| System                | File                       |
-| --------------------- | -------------------------- |
-| macOS (Apple Silicon) | `Loudr_x.y.z_aarch64.dmg`  |
-| Windows 10/11 (x64)   | `Loudr_x.y.z_x64_en-US.msi` |
-| Ubuntu 24.04+, Debian 13+ (x64) | `Loudr_x.y.z_amd64.deb` |
-| Other recent Linux (x64) | `Loudr_x.y.z_amd64.AppImage` |
+| System                | File                 |
+| --------------------- | -------------------- |
+| macOS (Apple Silicon) | `Loudr-x.y.z.dmg`      |
+| Windows 10/11 (x64)   | `Loudr-x.y.z.msi`      |
+| Ubuntu 24.04+, Debian 13+ (x64) | `Loudr-x.y.z.deb` |
+| Other recent Linux (x64) | `Loudr-x.y.z.AppImage` |
 
 The builds are not signed with a paid developer certificate yet:
 
 - **macOS:** the first time, right-click `Loudr.app` and choose **Open**.
 - **Windows:** in the SmartScreen dialog choose **More info**, then **Run anyway**.
-- **Linux (.deb):** `sudo apt install ./Loudr_x.y.z_amd64.deb`
+- **Linux (.deb):** `sudo apt install ./Loudr-x.y.z.deb`
 - **Linux (AppImage):** `chmod +x Loudr_x.y.z_amd64.AppImage`, then run it.
 
 Linux needs one more step, because Loudr reads the hold key straight from the

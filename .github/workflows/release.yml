@@ -62,6 +62,8 @@ jobs:
           tagName: ${{ startsWith(github.ref, 'refs/tags/') && github.ref_name || '' }}
           releaseName: Loudr ${{ github.ref_name }}
           releaseDraft: true
+          # Short file names: Loudr-0.4.1.msi rather than Loudr_0.4.1_x64_en-US.msi.
+          assetNamePattern: "[name]-[version][ext]"
 
       - uses: actions/upload-artifact@v4
         with:

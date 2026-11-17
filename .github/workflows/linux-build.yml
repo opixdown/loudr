@@ -52,30 +52,43 @@ jobs:
           dpkg-deb -I src-tauri/target/release/bundle/deb/*.deb | grep -E "Depends|Version|Installed-Size"
           ls -la src-tauri/target/release/bundle/deb/*.deb src-tauri/target/release/bundle/appimage/*.AppImage
 
-      - name: Install the .deb and see if Loudr stays up
+      - name: Install the .deb and see if Loudr starts
         run: |
           sudo apt-get install -y ./src-tauri/target/release/bundle/deb/*.deb
-          xvfb-run -a loudr &
-          sleep 20
-          find "$HOME/.local/share" "$HOME/.config" -path "*app.loudr.desktop*" -name "*.log" -exec sh -c 'echo "===== $1 ====="; cat "$1"' _ {} \;
+          # A desktop session has a message bus and a display; give CI both.
+          dbus-run-session -- xvfb-run -a loudr &
+          sleep 25
+          log=$(find "$HOME" -name "Loudr.log" 2>/dev/null | head -1)
+          if [ -n "$log" ]; then echo "===== $log ====="; cat "$log"; else echo "No log file found"; fi
           if ! pgrep -x loudr > /dev/null; then
             echo "Loudr stopped on its own"
             exit 1
           fi
-          echo "Loudr (.deb) was still running after 20 seconds"
+          if ! grep -q "Loudr started" "$log"; then
+            echo "Loudr is running but never finished starting"
+            exit 1
+          fi
+          echo "Loudr (.deb) started and was still running after 25 seconds"
           pkill -x loudr
           sleep 2
+          rm -f "$log"
 
-      - name: Start the AppImage and see if it stays up
+      - name: Start the AppImage and see if it starts
         run: |
           image=$(ls src-tauri/target/release/bundle/appimage/*.AppImage)
           chmod +x "$image"
           # No FUSE inside CI, so let the AppImage unpack itself.
-          APPIMAGE_EXTRACT_AND_RUN=1 xvfb-run -a "$image" &
-          sleep 25
-          if ! pgrep -f "loudr" > /dev/null; then
+          APPIMAGE_EXTRACT_AND_RUN=1 dbus-run-session -- xvfb-run -a "$image" &
+          sleep 30
+          log=$(find "$HOME" -name "Loudr.log" 2>/dev/null | head -1)
+          if [ -n "$log" ]; then echo "===== $log ====="; cat "$log"; else echo "No log file found"; fi
+          if ! pgrep -x loudr > /dev/null; then
             echo "Loudr (AppImage) stopped on its own"
             exit 1
           fi
-          echo "Loudr (AppImage) was still running after 25 seconds"
-          pkill -f loudr || true
+          if ! grep -q "Loudr started" "$log"; then
+            echo "Loudr (AppImage) is running but never finished starting"
+            exit 1
+          fi
+          echo "Loudr (AppImage) started and was still running after 30 seconds"
+          pkill -x loudr || true
