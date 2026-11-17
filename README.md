@@ -7,6 +7,7 @@
 <p align="center">
   <b>Select text and tap a key to hear it. Hold a key and speak to type.</b><br>
   Free, open-source, fully offline text to speech and voice typing for macOS and Windows.<br>
+  Linux builds from source (experimental).<br>
   It also turns a script into an MP3.<br>
   Nothing you select or say leaves your computer.
 </p>
@@ -196,6 +197,40 @@ APPLE_SIGNING_IDENTITY="Apple Development: you@example.com (TEAMID)" npm run tau
 Pushing a `v*` tag runs `.github/workflows/release.yml`, which builds the
 `.dmg` and `.msi` and attaches them to a draft GitHub release.
 
+### Linux (experimental)
+
+Linux works when built from source; there is no installer yet. Thanks to
+[@sshprashant02](https://github.com/sshprashant02) for the first version.
+
+On Ubuntu or Debian, install the build packages first:
+
+```sh
+sudo apt-get install libwebkit2gtk-4.1-dev libayatana-appindicator3-dev \
+  librsvg2-dev libxdo-dev libssl-dev libasound2-dev build-essential cmake clang
+```
+
+Then build without packaging and run the result:
+
+```sh
+npm install
+npm run tauri build -- --no-bundle
+./src-tauri/target/release/loudr
+```
+
+Things to know:
+
+- **Keyboard access.** Loudr reads the hold key straight from `/dev/input`,
+  which works on both Wayland and X11. Your user must be in the `input`
+  group: `sudo usermod -aG input $USER`, then log out and back in. Be aware
+  that this lets any program you run read the keyboard, not only Loudr.
+- **The hold key still reaches other apps.** On Linux Loudr can watch the
+  key but not hide it, so pick a key that does nothing on its own.
+- **Wayland.** Loudr starts through XWayland so the floating bar can stay on
+  top of other windows. Set `GDK_BACKEND` yourself to change that.
+- **GNOME** asks to allow "Remote Interaction" the first time text is typed.
+- **Tested so far:** dictation on Ubuntu with GNOME. Text to speech, other
+  desktops and other distributions have not been tried yet.
+
 ### Test transcription and speech from the command line
 
 ```sh
@@ -233,17 +268,17 @@ hotkey up   -> close microphone -> resample to 16 kHz mono
 | `video/`                      | The promo videos (Remotion)                    |
 | `video/studio/`               | The studio voices film (Stageshow kit, recorded frame by frame) |
 
-## Not in v1
+## Not yet
 
-No cloud APIs, no AI rewriting, no accounts, no auto-update, no Linux, no
-Intel Mac build, no CUDA.
+No AI rewriting of dictated text, no accounts, no auto-update, no Linux
+installer, no Intel Mac build, no CUDA.
 
 ## Contributing
 
 Loudr is meant to be built on. Issues and pull requests are welcome. Ideas
 that would make good first contributions:
 
-- Linux support
+- A Linux installer (.deb or AppImage), and testing on more desktops
 - An Intel Mac build
 - A custom vocabulary for names and technical terms
 - Restoring images and files on the clipboard after pasting
