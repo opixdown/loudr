@@ -1,6 +1,6 @@
 // The download buttons link to /download/<system> on this site, which starts
 // the newest installer (see api/download.js). This only fills in the version
-// and size under each button, and shows Linux once a Linux build exists.
+// and size under each button.
 const REPO = "opixdown/loudr";
 const mac = document.getElementById("download-mac");
 const win = document.getElementById("download-win");
@@ -24,9 +24,7 @@ const highlight = (button) => {
   // Put the highlighted system first.
   button.parentElement.prepend(button);
 };
-// The Linux button only appears once a Linux build is known to exist (below),
-// so until then a Linux visitor sees the Mac button highlighted.
-highlight(own && !own.hidden ? own : mac);
+highlight(own || mac);
 
 const megabytes = (bytes) => `${Math.round(bytes / 1_000_000)} MB`;
 
@@ -45,15 +43,9 @@ fetch(`https://api.github.com/repos/${REPO}/releases/latest`)
         `${version} · Windows 10 and 11 · ${megabytes(msi.size)}`;
     }
     const deb = release.assets.find((a) => a.name.endsWith(".deb"));
-    const appImage = release.assets.find((a) => a.name.endsWith(".AppImage"));
     if (deb) {
       document.getElementById("meta-linux").textContent =
         `${version} · Ubuntu 24.04+ · ${megabytes(deb.size)}`;
-      linux.hidden = false;
-      if (own === linux) highlight(linux);
-    }
-    if (deb && appImage) {
-      document.getElementById("linux-other").hidden = false;
     }
   })
   .catch(() => {});
